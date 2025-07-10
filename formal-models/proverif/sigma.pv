@@ -1,0 +1,153 @@
+set attacker = active.
+
+(* Standard Communication Channel *)
+free c: channel.
+
+
+(* get the first output *)
+fun split_1_bitstring(bitstring): bitstring.
+(* get the second output *)
+fun split_2_bitstring(bitstring): bitstring.
+
+const nil: bitstring.
+
+(* Symmetric Key *)
+type key.
+fun tc_key_bitstring(key): bitstring [typeConverter].
+
+fun enc(key, bitstring): bitstring.
+reduc forall k: key, m: bitstring; dec(k, enc(k, m)) = m.
+
+fun mac(key, bitstring): bitstring.
+
+fun kdf(bitstring, bitstring, bitstring): key.
+const ke_info: bitstring.
+const km_info: bitstring.
+
+(* get the first output (w0/k_shared) *)
+fun split_1(key): key.
+(* get the second output (w1/k_confirm) *)
+fun split_2(key): key.
+
+reduc forall k: key; join_2(split_1(k) , split_2(k)) = k.
+
+fun split_3(key): key.
+
+reduc forall k: key; join_3(split_1(k) , split_2(k), split_3(k)) = k.
+
+(* group point *)
+type group.
+
+fun tc_group_bitstring(group): bitstring [typeConverter].
+
+(* p: group order *)
+const p: bitstring.
+
+const P: group.
+
+fun mod_p(group, bitstring) : bitstring.
+fun mul_point(group, bitstring): group.
+equation forall a: bitstring, b: bitstring; mul_point(mul_point(P, a), b) = mul_point(mul_point(P, b), a).
+
+
+fun add_pts(group, group): group.
+equation forall a: group, b: group; add_pts(a,b) = add_pts(b,a).
+reduc forall a: group, b: group; sub_pts(add_pts(a, b), b) = a.
+
+reduc forall x: bitstring, G: group; group_check(G, mul_point(G, x)) = true.
+
+fun group_check_sum(group, group): bool
+reduc forall x: bitstring, y: bitstring, G: group, Gx: group;
+		group_check_sum(G, add_pts(mul_point(G, x), mul_point(Gx, y))) = true
+	otherwise forall x: bitstring, y: bitstring, G: group, Gx: group;
+		group_check_sum(G, add_pts(mul_point(Gx, x), mul_point(G, y))) = true.
+	
+(* reduc forall x: bitstring, y: bitstring, G: group; group_check_mul(G, mul_point(mul_point(G, x), y)) = true. *)
+
+fun mul(bitstring, bitstring): bitstring.
+equation forall a: bitstring, b: bitstring; mul(a,b) = mul(b,a).
+
+
+fun sign(key, bitstring) : bitstring.
+(* reduc forall m: bitstring, k : sskey ; getmess ( sign (m, k ) ) = m. *)
+reduc forall k: key, m: bitstring; sign_verif(mul_point(P, tc_key_bitstring(k)), m, sign (k, m)) = m.
+
+
+let initiator_process(
+	a: key
+	) = 
+	(* generate ephemeral secret *)
+	new x: bitstring;
+	(* compute A: identity public key *)
+	let identity_a = mul_point(P, tc_key_bitstring(a)) in
+	(* compute ephemeral public key *)
+	let gx = mul_point(P, x) in
+	(* --> gx *)
+	out(c, gx);
+	(* <-- (gy, enc(ke, (B || sign(b, (gx, gy)) || mac(km, B)))) *)
+	in(c, (gy: group, cb: bitstring));
+	(* compute shared secret (gy^x) *)
+	let shared_secret = mul_point(gy, x) in
+	(* compute ke *)
+	let ke = kdf(nil, tc_group_bitstring(shared_secret), ke_info) in
+	(* compute km *)
+	let km = kdf(nil, tc_group_bitstring(shared_secret), km_info) in
+	(* decrypt message *)
+	let (identity_b: group, sig_b: bitstring, mac_b: bitstring) = dec(ke, cb) in
+	(* verify signature and mac  *)
+	if ((sign_verif(identity_b, sig_b, (gx, gy)) = (gx, gy)) && (mac_b = mac(km, tc_group_bitstring(identity_b)))) then
+		(* compute signature (sign(a, (gy, gx))) *)
+		let sig_a = sign(a, (gy, gx)) in
+		(* compute mac(km, A) *)
+		let mac_a = mac(km, tc_group_bitstring(identity_a)) in
+		(* compute ciphertext *)
+		let ca = enc(ke, (identity_a, sig_a, mac_a)) in
+		(* --> enc(ke, (A || sig(a, (gy, gx)) || mac(km, A)) *)
+		out(c, ca);
+		0.
+
+let responder_process(
+	b: key
+	) = 
+	(* compute B: identity public key *)
+	let identity_b = mul_point(P, tc_key_bitstring(b)) in
+	(* <-- gx *)
+	in(c, gx: group);
+
+	(* generate ephemeral secret *)
+	new y: bitstring;
+	(* compute ephemeral public key *)
+	let gy = mul_point(P, y) in
+	(* compute shared_secret *)
+	let shared_secret = mul_point(gx, y) in
+	(* compute ke *)
+	let ke = kdf(nil, tc_group_bitstring(shared_secret), ke_info) in
+	(* compute km *)
+	let km = kdf(nil, tc_group_bitstring(shared_secret), km_info) in
+
+	(* compute signature (sign(b, (gx, gy))) *)
+	let sig_b = sign(b, (gx, gy)) in
+	(* compute mac(km, B) *)
+	let mac_b = mac(km, tc_group_bitstring(identity_b)) in
+	(* compute ciphertext *)
+	let cb = enc(ke, (identity_b, sig_b, mac_b)) in
+	(* --> (gy, enc(ke, (B || sign(b, (gx, gy)) || mac(km, B)))) *)
+	out(c, (gy, cb));
+
+	(* <-- enc(ke, (A || sig(a, (gy, gx)) || mac(km, A)) *)
+	in(c, ca: bitstring);
+	let (identity_a: group, sig_a: bitstring, mac_a: bitstring) = dec(ke, ca) in
+	if (sign_verif(identity_a, sig_a, (gx, gy)) = (gx, gy)) && (mac_a = mac(km, tc_group_bitstring(identity_a))) then
+		0.
+
+	
+free a: key [private].
+free b: key [private].
+
+query attacker(a).
+query attacker(b).
+query attacker(mul_point(P, tc_key_bitstring(a))).
+query attacker(mul_point(P, tc_key_bitstring(b))).
+
+process
+	(!initiator_process(a)) | (!responder_process(b))

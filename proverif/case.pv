@@ -1,0 +1,356 @@
+set attacker = active.
+
+(* Standard Communication Channel *)
+free c: channel.
+
+const nil: bitstring.
+
+(* Symmetric Key *)
+type key.
+fun tc_key_bitstring(key): bitstring [typeConverter].
+
+(* Queries *)
+(* Identity *)
+free q_id_i_i, q_id_r_i, q_id_i_r, q_id_r_r: bitstring [private].
+
+(* Ephemeral Keys and derived shared secret *)
+free q_eph_x, q_eph_y, q_shared_secret_i, q_shared_secret_r: bitstring [private].
+
+(* Operational Session Keys (I2R, R2I...) *)
+free q_session_keys_i, q_session_keys_r: bitstring [private].
+
+(* Just for queries *)
+fun enc(bitstring, bitstring): bitstring.
+reduc forall k: bitstring, m: bitstring; dec(k, enc(k, m)) = m.
+
+
+(* Symmetric Key Authenticated Encryption with Additional Data *)
+fun aead_enc(key, bitstring, bitstring, bitstring): bitstring.
+(* Symmetric Key Authenticated Encryption with Additional Data Decryption Rule *)
+reduc forall k: key, m: bitstring, n: bitstring, ad: bitstring; aead_dec(k, aead_enc(k, m, n, ad), n, ad) = m.
+(* Symmetric Key Authenticated Encryption with Additional Data Decryption Validation Rule *)
+reduc forall k: key, m: bitstring, n: bitstring, ad: bitstring;
+	aead_dec_validate(k, aead_enc(k, m, n, ad), n, ad) = true.
+
+const ncase_sigma2n: bitstring.
+const ncase_sigma3n: bitstring.
+
+fun hash(bitstring): bitstring.
+
+
+fun mac(key, bitstring): bitstring.
+
+fun kdf(bitstring, bitstring, bitstring): key.
+const sigma2_info: bitstring.
+const sigma3_info: bitstring.
+const sekeys_info: bitstring.
+
+const sigma_finished: bitstring.
+
+(* Group point *)
+type group.
+
+fun tc_group_bitstring(group): bitstring [typeConverter].
+
+(* Group generator *)
+const P: group.
+
+(* Multiply a scalar by a point (Public Key generation or DH operation)*)
+fun mul_point(group, bitstring): group.
+equation forall a: bitstring, b: bitstring; mul_point(mul_point(P, a), b) = mul_point(mul_point(P, b), a).
+
+(* Signature Algorithm *)
+fun sign(key, bitstring) : bitstring.
+reduc forall k: key, m: bitstring; sign_verif(mul_point(P, tc_key_bitstring(k)), sign (k, m), m) = true.
+
+(* This event states that the responder accepts to start a session with an initiator *)
+event start_session_with_initiator(group, bitstring).
+(* This event states that the initiator successfuly ended an execution with their own identity *)
+event initiator_end(group, group, bitstring).
+(* This event states that the initiator accepts to start a session with a responder *)
+event start_session_with_responder(group, bitstring).
+(* This event states that the initiator accepts to link a responder's public key with their identity *)
+event accept_responder_identity(group, group, bitstring).
+(* This event states that the responder successfuly ended an execution with their own identity *)
+event responder_end(group, group, bitstring).
+
+
+event did_not_reach_end_initiator(bitstring).
+event did_not_reach_end_responder(bitstring).
+
+let initiator_process(
+	seed_x: bitstring,
+	initiator_noc_key: key,
+	initiator_noc: group,
+	initiator_noc_signature: bitstring,
+	noc_verification_key: group,
+	ipk: key
+	) = 
+	(* generate ephemeral secret *)
+	(* we could use this right away, but we could not find a better hack to leak a fresh secret *)
+	new fresh_x: bitstring;
+
+	(* we mix the seed and fresh_x with a hash function then leak one half of the output *)
+	(* this will make sense with the queries *)
+	(* in one of the phases, we will leak the seed to represent leaking the entire key (x) *)
+	let x = hash((seed_x, fresh_x)) in
+
+	(* generate InitiatorRandom *)
+	new initiator_random: bitstring;
+	(* compute ephemeral public key *)
+	let gx = mul_point(P, x) in
+	let msg1 = (gx, initiator_random) in
+	(* --> (gx, initiator_random) *)
+	out(c, (msg1));
+	(* <-- (gy, responder_random, enc(ke, (B || sign(b, (gx, gy)) || mac(km, B)))) *)
+	in(c, msg2:  bitstring);
+
+	let (responder_random: bitstring, gy: group, cb: bitstring) = msg2 in
+	event start_session_with_responder(gy, responder_random);
+	(* compute shared secret (gy^x) *)
+	let shared_secret = mul_point(gy, x) in
+
+	(* compute s2k *)
+	let s2k = kdf(tc_group_bitstring(shared_secret), (tc_key_bitstring(ipk), responder_random, gy, hash(msg1)), sigma2_info) in
+	
+	(* decrypt message *)
+	let (responder_noc: group, responder_noc_signature: bitstring, sig_b: bitstring, resumption_id: bitstring) 
+		= aead_dec(s2k, cb, ncase_sigma2n, nil) in
+
+	if aead_dec_validate(s2k, cb, ncase_sigma2n, nil)
+		&& sign_verif(noc_verification_key, responder_noc_signature, tc_group_bitstring(responder_noc))
+		&& sign_verif(responder_noc, sig_b, (responder_noc, gy, gx))
+	then
+
+		event accept_responder_identity(responder_noc, gy, responder_random);
+		let sig_i = sign(initiator_noc_key, (initiator_noc, gx, gy)) in
+		let s3k = kdf(tc_group_bitstring(shared_secret), (tc_key_bitstring(ipk), hash((msg1, msg2))), sigma3_info) in
+		let msg3 = aead_enc(s3k, (initiator_noc, initiator_noc_signature, sig_i), ncase_sigma3n, nil) in
+		out(c, msg3);
+		let keys = kdf(tc_group_bitstring(shared_secret), (ipk, hash((msg1, msg2, msg3))), sekeys_info) in
+			
+		(* queries *)
+		event initiator_end(initiator_noc, gx, initiator_random);
+			
+		out(c, enc(tc_group_bitstring(initiator_noc), q_id_i_i));
+		out(c, enc(tc_group_bitstring(responder_noc), q_id_r_i));
+		
+		
+		out(c, fresh_x);
+		out(c, enc(x, q_eph_x));
+		out(c, enc(tc_group_bitstring(shared_secret), q_shared_secret_i));
+			
+		out(c, enc(tc_key_bitstring(keys), q_session_keys_i));
+
+		new dummy: bitstring;
+		event did_not_reach_end_initiator(dummy);
+			
+		0.
+
+let responder_process(
+	seed_y: bitstring,
+	responder_noc_key: key,
+	responder_noc: group,
+	responder_noc_signature: bitstring,
+	noc_verification_key: group,
+	ipk: key
+	) = 
+
+	(* <-- (gx, initiator_random) *)
+	in(c, msg1: bitstring);
+
+	let (gx: group, initiator_random: bitstring) = msg1 in
+
+	event start_session_with_initiator(gx, initiator_random);
+	
+	(* generate ephemeral secret *)
+	(* we could use this right away, but we could not find a better hack to leak a fresh secret *)
+	new fresh_y: bitstring;
+
+	(* we mix the seed and fresh_y with a hash function then leak one half of the output *)
+	(* this will make sense with the queries *)
+	(* in one of the phases, we will leak the seed to represent leaking the entire key (y) *)
+	let y = hash((seed_y, fresh_y)) in
+
+
+	(* generate InitiatorRandom *)
+	new responder_random: bitstring;
+	(* generate ResumptionId *)
+	new resumption_id: bitstring;
+	(* compute ephemeral public key *)
+	let gy = mul_point(P, y) in
+	(* compute shared_secret *)
+	let shared_secret = mul_point(gx, y) in
+	
+	(* compute s2k *)
+	let s2k = kdf(
+		tc_group_bitstring(shared_secret),
+		(tc_key_bitstring(ipk),
+		responder_random, gy, hash(msg1)),
+		sigma2_info
+	) in
+	
+	let sig_r = sign(
+		responder_noc_key,
+		(responder_noc, gy, gx)
+	) in
+
+	let c_r = aead_enc(
+		s2k,
+		(responder_noc, responder_noc_signature, sig_r, resumption_id),
+		ncase_sigma2n,
+		nil
+	) in
+	
+	let msg2 = (responder_random, gy, c_r) in
+	out(c, msg2);
+
+	in(c, msg3: bitstring);
+
+	let s3k = kdf(
+		tc_group_bitstring(shared_secret), 
+		(tc_key_bitstring(ipk), hash((msg1, msg2))),
+		sigma3_info
+	) in
+
+	let (initiator_noc: group, initiator_noc_signature: bitstring, sig_i: bitstring)
+		= aead_dec(s3k, msg3, ncase_sigma3n, nil) in
+	
+	if aead_dec_validate(s3k, msg3, ncase_sigma3n, nil) then 
+		if sign_verif(
+			noc_verification_key,
+			initiator_noc_signature, tc_group_bitstring(initiator_noc)
+			) 
+			&& sign_verif(initiator_noc, sig_i, (initiator_noc, gx, gy))
+		then
+			let keys = kdf(
+				tc_group_bitstring(shared_secret),
+				(ipk, hash((msg1, msg2, msg3))),
+				sekeys_info
+			) in
+
+			out(c, sigma_finished);
+				
+			(* queries *)
+
+			event responder_end(responder_noc, gy, responder_random);
+		
+			out(c, enc(tc_group_bitstring(initiator_noc), q_id_i_r));
+			out(c, enc(tc_group_bitstring(responder_noc), q_id_r_r));
+				
+
+			out(c, fresh_y);
+			out(c, enc(y, q_eph_y));
+			out(c, enc(tc_group_bitstring(shared_secret), q_shared_secret_r));
+
+			out(c, enc(tc_key_bitstring(keys), q_session_keys_r));
+
+			new dummy: bitstring;
+			event did_not_reach_end_responder(dummy);
+				
+			0.
+
+(* This query checks Initiator to Responder Authentication *)
+query noc: group, k: group, r: bitstring; inj-event(responder_end(noc, k, r))
+	==> inj-event(start_session_with_responder(k, r)) && inj-event(accept_responder_identity(noc, k, r)).
+
+(* This query checks Responder to Initiator Authentication *)
+query noc: group, k: group, r: bitstring; inj-event(initiator_end(noc, k, r))
+	==> inj-event(start_session_with_initiator(k, r)).
+
+(* These queries check if the attacker can obtain the identity of the initiator *)
+(* Should not leak before the ipk is leaked *)
+not attacker(q_id_i_i) phase 2.
+not attacker(q_id_i_r) phase 2.
+query attacker(q_id_i_i).
+query attacker(q_id_i_r).
+
+(* These queries check if the attacker can obtain the identity of the responder *)
+(* Should not leak before the ipk is leaked *)
+not attacker(q_id_r_i) phase 2.
+not attacker(q_id_r_r) phase 2.
+query attacker(q_id_r_i).
+query attacker(q_id_r_r).
+
+(* These queries check if the attacker can obtain the ephemeral keys *)
+(* Should not leak before x is leaked *)
+not attacker(q_eph_x) phase 0.
+query attacker(q_eph_x).
+(* Should not leak before y is leaked *)
+not attacker(q_eph_y) phase 1.
+query attacker(q_eph_y).
+
+(* These queries check if the attacker can obtain the shared_secret *)
+(* Should not leak before an ephemeral key is leaked *)
+not attacker(q_session_keys_i) phase 0.
+not attacker(q_session_keys_r) phase 0.
+query attacker(q_shared_secret_i).
+query attacker(q_shared_secret_r).
+
+(* These queries check if the attacker can obtain the operational session keys *)
+(* Should not leak before an ephemeral key + ipk are leaked *)
+query attacker(q_session_keys_i).
+query attacker(q_session_keys_r).
+not attacker(q_session_keys_i) phase 2.
+not attacker(q_session_keys_r) phase 2.
+
+(* These should two should fail *)
+query x: bitstring; event(did_not_reach_end_initiator(x)).
+query x: bitstring; event(did_not_reach_end_responder(x)).
+
+(* This is the equivalent of a NOC CA key. *)
+(* Assumption: this does not leak. *)
+free noc_signing_key: key [private].
+
+process
+	new ipk: key;
+	new seed_x: bitstring;
+	new seed_y: bitstring;
+
+	let noc_verification_key = mul_point(P, tc_key_bitstring(noc_signing_key)) in
+	(* This can be public but normally it's only for fabric members *)
+	out(c, noc_verification_key);
+	
+	(!(
+		(* Assumption: Each node has a NOC correctly installed during a prior protocol *)
+		(* Assumption: NOCs don't leak *)
+		new initiator_noc_key: key;
+		let initiator_noc = mul_point(P, tc_key_bitstring(initiator_noc_key)) in
+		let initiator_noc_signature = sign(noc_signing_key, tc_group_bitstring(initiator_noc)) in
+		initiator_process(
+			seed_x,
+			initiator_noc_key, initiator_noc,
+			initiator_noc_signature,
+			noc_verification_key, ipk
+		)
+	))
+	|  
+	(!(
+		(* Assumption: Each node has a NOC correctly installed during a prior protocol *)
+		(* Assumption: NOCs don't leak *)
+		new responder_noc_key: key;
+		let responder_noc = mul_point(P, tc_key_bitstring(responder_noc_key)) in
+		let responder_noc_signature = sign(noc_signing_key, tc_group_bitstring(responder_noc)) in
+		responder_process(
+			seed_y,
+			responder_noc_key, responder_noc,
+			responder_noc_signature,
+			noc_verification_key, ipk
+		)
+	))
+	|
+	(* Leak the second input to the hash function which yields x *)
+	(! (phase 1; out(c, seed_x)))
+	|
+	(* Leak the second input to the hash function which yields y *)
+	(* Leaking the above should reveal the shared secret already so this does not do much *)
+	(! (phase 2; out(c, seed_y)))
+	|
+	(* Attacker joins the Fabric and obtains ipk *)
+	(! (phase 3; out(c, ipk)))
+
+
+(* Security goals: Mutual Authentication, Initiator Identity Hiding, Confidentiality of Operational Keys *)
+(* Condition to attack the protocol's security properties in any way: the attacker needs to be in the Fabric (obtain ipk) *)
+(* Obtaining the ipk on its own allows the attacker to reveal the initiator's identity *)
+(* If the attacker is in the fabric, and one of the ephemeral keys (x or y) are leaked, then the attacker can break all the security properties *)

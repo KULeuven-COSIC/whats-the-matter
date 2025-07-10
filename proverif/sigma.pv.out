@@ -1,0 +1,178 @@
+Linear part:
+add_pts(a_1,b_1) = add_pts(b_1,a_1)
+mul_point(mul_point(P,a_1),b_1) = mul_point(mul_point(P,b_1),a_1)
+mul(a_1,b_1) = mul(b_1,a_1)
+Completing equations...
+Completed equations:
+mul(a_1,b_1) = mul(b_1,a_1)
+mul_point(mul_point(P,a_1),b_1) = mul_point(mul_point(P,b_1),a_1)
+add_pts(a_1,b_1) = add_pts(b_1,a_1)
+Convergent part: No equation.
+Process 0 (that is, the initial process):
+(
+    {1}!
+    {2}let a_1: key = a in
+    {3}new x: bitstring;
+    {4}let identity_a: group = mul_point(P,a_1) in
+    {5}let gx: group = mul_point(P,x) in
+    {6}out(c, gx);
+    {7}in(c, (gy: group,cb: bitstring));
+    {8}let shared_secret: group = mul_point(gy,x) in
+    {9}let ke: key = kdf(nil,shared_secret,ke_info) in
+    {10}let km: key = kdf(nil,shared_secret,km_info) in
+    {11}let (identity_b: group,sig_b: bitstring,mac_b: bitstring) = dec(ke,cb) in
+    {12}if ((sign_verif(identity_b,sig_b,(gx,gy)) = (gx,gy)) && (mac_b = mac(km,identity_b))) then
+    {13}let sig_a: bitstring = sign(a_1,(gy,gx)) in
+    {14}let mac_a: bitstring = mac(km,identity_a) in
+    {15}let ca: bitstring = enc(ke,(identity_a,sig_a,mac_a)) in
+    {16}out(c, ca)
+) | (
+    {17}!
+    {18}let b_1: key = b in
+    {19}let identity_b_1: group = mul_point(P,b_1) in
+    {20}in(c, gx_1: group);
+    {21}new y: bitstring;
+    {22}let gy_1: group = mul_point(P,y) in
+    {23}let shared_secret_1: group = mul_point(gx_1,y) in
+    {24}let ke_1: key = kdf(nil,shared_secret_1,ke_info) in
+    {25}let km_1: key = kdf(nil,shared_secret_1,km_info) in
+    {26}let sig_b_1: bitstring = sign(b_1,(gx_1,gy_1)) in
+    {27}let mac_b_1: bitstring = mac(km_1,identity_b_1) in
+    {28}let cb_1: bitstring = enc(ke_1,(identity_b_1,sig_b_1,mac_b_1)) in
+    {29}out(c, (gy_1,cb_1));
+    {30}in(c, ca_1: bitstring);
+    {31}let (identity_a_1: group,sig_a_1: bitstring,mac_a_1: bitstring) = dec(ke_1,ca_1) in
+    {32}if ((sign_verif(identity_a_1,sig_a_1,(gx_1,gy_1)) = (gx_1,gy_1)) && (mac_a_1 = mac(km_1,identity_a_1))) then
+    0
+)
+
+--  Process 1 (that is, process 0, with let moved downwards):
+(
+    {1}!
+    {3}new x: bitstring;
+    {5}let gx: group = mul_point(P,x) in
+    {6}out(c, gx);
+    {7}in(c, (gy: group,cb: bitstring));
+    {8}let shared_secret: group = mul_point(gy,x) in
+    {9}let ke: key = kdf(nil,shared_secret,ke_info) in
+    {11}let (identity_b: group,sig_b: bitstring,mac_b: bitstring) = dec(ke,cb) in
+    {10}let km: key = kdf(nil,shared_secret,km_info) in
+    {12}if ((sign_verif(identity_b,sig_b,(gx,gy)) = (gx,gy)) && (mac_b = mac(km,identity_b))) then
+    {2}let a_1: key = a in
+    {4}let identity_a: group = mul_point(P,a_1) in
+    {14}let mac_a: bitstring = mac(km,identity_a) in
+    {13}let sig_a: bitstring = sign(a_1,(gy,gx)) in
+    {15}let ca: bitstring = enc(ke,(identity_a,sig_a,mac_a)) in
+    {16}out(c, ca)
+) | (
+    {17}!
+    {20}in(c, gx_1: group);
+    {21}new y: bitstring;
+    {23}let shared_secret_1: group = mul_point(gx_1,y) in
+    {25}let km_1: key = kdf(nil,shared_secret_1,km_info) in
+    {18}let b_1: key = b in
+    {19}let identity_b_1: group = mul_point(P,b_1) in
+    {27}let mac_b_1: bitstring = mac(km_1,identity_b_1) in
+    {22}let gy_1: group = mul_point(P,y) in
+    {26}let sig_b_1: bitstring = sign(b_1,(gx_1,gy_1)) in
+    {24}let ke_1: key = kdf(nil,shared_secret_1,ke_info) in
+    {28}let cb_1: bitstring = enc(ke_1,(identity_b_1,sig_b_1,mac_b_1)) in
+    {29}out(c, (gy_1,cb_1));
+    {30}in(c, ca_1: bitstring);
+    {31}let (identity_a_1: group,sig_a_1: bitstring,mac_a_1: bitstring) = dec(ke_1,ca_1) in
+    {32}if ((sign_verif(identity_a_1,sig_a_1,(gx_1,gy_1)) = (gx_1,gy_1)) && (mac_a_1 = mac(km_1,identity_a_1))) then
+    0
+)
+
+-- Query not attacker(a[]) in process 1.
+Translating the process into Horn clauses...
+Completing...
+Starting query not attacker(a[])
+RESULT not attacker(a[]) is true.
+-- Query not attacker(b[]) in process 1.
+Translating the process into Horn clauses...
+Completing...
+Starting query not attacker(b[])
+RESULT not attacker(b[]) is true.
+-- Query not attacker(mul_point(P,a[])) in process 1.
+Translating the process into Horn clauses...
+Completing...
+Starting query not attacker(mul_point(P,a[]))
+RESULT not attacker(mul_point(P,a[])) is true.
+-- Query not attacker(mul_point(P,b[])) in process 1.
+Translating the process into Horn clauses...
+Completing...
+Starting query not attacker(mul_point(P,b[]))
+goal reachable: attacker(mul_point(P,b[]))
+
+Derivation:
+Abbreviations:
+y_1 = y[gx_1 = P,!1 = @sid]
+
+1. Using the function P the attacker may obtain P.
+attacker(P).
+
+2. The message P that the attacker may have by 1 may be received at input {20}.
+So the message (mul_point(P,y_1),enc(kdf(nil,mul_point(P,y_1),ke_info),(mul_point(P,b[]),sign(b[],(P,mul_point(P,y_1))),mac(kdf(nil,mul_point(P,y_1),km_info),mul_point(P,b[]))))) may be sent to the attacker at output {29}.
+attacker((mul_point(P,y_1),enc(kdf(nil,mul_point(P,y_1),ke_info),(mul_point(P,b[]),sign(b[],(P,mul_point(P,y_1))),mac(kdf(nil,mul_point(P,y_1),km_info),mul_point(P,b[])))))).
+
+3. By 2, the attacker may know (mul_point(P,y_1),enc(kdf(nil,mul_point(P,y_1),ke_info),(mul_point(P,b[]),sign(b[],(P,mul_point(P,y_1))),mac(kdf(nil,mul_point(P,y_1),km_info),mul_point(P,b[]))))).
+Using the function 2-proj-2-tuple the attacker may obtain enc(kdf(nil,mul_point(P,y_1),ke_info),(mul_point(P,b[]),sign(b[],(P,mul_point(P,y_1))),mac(kdf(nil,mul_point(P,y_1),km_info),mul_point(P,b[])))).
+attacker(enc(kdf(nil,mul_point(P,y_1),ke_info),(mul_point(P,b[]),sign(b[],(P,mul_point(P,y_1))),mac(kdf(nil,mul_point(P,y_1),km_info),mul_point(P,b[]))))).
+
+4. Using the function ke_info the attacker may obtain ke_info.
+attacker(ke_info).
+
+5. By 2, the attacker may know (mul_point(P,y_1),enc(kdf(nil,mul_point(P,y_1),ke_info),(mul_point(P,b[]),sign(b[],(P,mul_point(P,y_1))),mac(kdf(nil,mul_point(P,y_1),km_info),mul_point(P,b[]))))).
+Using the function 1-proj-2-tuple the attacker may obtain mul_point(P,y_1).
+attacker(mul_point(P,y_1)).
+
+6. Using the function nil the attacker may obtain nil.
+attacker(nil).
+
+7. By 6, the attacker may know nil.
+By 5, the attacker may know mul_point(P,y_1).
+By 4, the attacker may know ke_info.
+Using the function kdf the attacker may obtain kdf(nil,mul_point(P,y_1),ke_info).
+attacker(kdf(nil,mul_point(P,y_1),ke_info)).
+
+8. By 7, the attacker may know kdf(nil,mul_point(P,y_1),ke_info).
+By 3, the attacker may know enc(kdf(nil,mul_point(P,y_1),ke_info),(mul_point(P,b[]),sign(b[],(P,mul_point(P,y_1))),mac(kdf(nil,mul_point(P,y_1),km_info),mul_point(P,b[])))).
+Using the function dec the attacker may obtain (mul_point(P,b[]),sign(b[],(P,mul_point(P,y_1))),mac(kdf(nil,mul_point(P,y_1),km_info),mul_point(P,b[]))).
+attacker((mul_point(P,b[]),sign(b[],(P,mul_point(P,y_1))),mac(kdf(nil,mul_point(P,y_1),km_info),mul_point(P,b[])))).
+
+9. By 8, the attacker may know (mul_point(P,b[]),sign(b[],(P,mul_point(P,y_1))),mac(kdf(nil,mul_point(P,y_1),km_info),mul_point(P,b[]))).
+Using the function 1-proj-3-tuple the attacker may obtain mul_point(P,b[]).
+attacker(mul_point(P,b[])).
+
+10. By 9, attacker(mul_point(P,b[])).
+The goal is reached, represented in the following fact:
+attacker(mul_point(P,b[])).
+
+
+A more detailed output of the traces is available with
+  set traceDisplay = long.
+
+in(c, P) at {20} in copy a_2
+
+new y: bitstring creating y_2 at {21} in copy a_2
+
+out(c, (~M,~M_1)) with ~M = mul_point(P,y_2), ~M_1 = enc(kdf(nil,mul_point(P,y_2),ke_info),(mul_point(P,b),sign(b,(P,mul_point(P,y_2))),mac(kdf(nil,mul_point(P,y_2),km_info),mul_point(P,b)))) at {29} in copy a_2
+
+The attacker has the message 1-proj-3-tuple(dec(kdf(nil,~M,ke_info),~M_1)) = mul_point(P,b).
+A trace has been found.
+RESULT not attacker(mul_point(P,b[])) is false.
+
+--------------------------------------------------------------
+Verification summary:
+
+Query not attacker(a[]) is true.
+
+Query not attacker(b[]) is true.
+
+Query not attacker(mul_point(P,a[])) is true.
+
+Query not attacker(mul_point(P,b[])) is false.
+
+--------------------------------------------------------------
+

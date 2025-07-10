@@ -1,0 +1,249 @@
+(* Standard Communication Channel *)
+free c: channel.
+
+(* Queries *)
+free q_confirm_p, q_confirm_v, q_shared_p, q_shared_v: bitstring [private].
+query 
+	attacker(q_confirm_p);
+	attacker(q_shared_p);
+	attacker(q_confirm_v);
+	attacker(q_shared_v).
+
+(* Symmetric Key *)
+type key.
+fun tc_key_bitstring(key): bitstring [typeConverter].
+
+fun enc(key, bitstring): bitstring.
+reduc forall k: key, m: bitstring; dec(k, enc(k, m)) = m.
+
+type length.
+const zero_len: length.
+fun len(bitstring): length.
+
+(* Type Converter between length and bitstring *)
+fun tc_length_bitstring(length): bitstring [typeConverter].
+
+const nil: bitstring.
+
+fun hash(bitstring): bitstring.
+
+fun mac(key, bitstring): bitstring.
+
+fun kdf(bitstring, bitstring, bitstring): key.
+
+(* to be used as info in kdf *)
+const shared_key: bitstring.
+(* to be used as info in kdf *)
+const confirmation_keys: bitstring.
+
+
+letfun pbkdf(pw: bitstring, idProver: bitstring, idVerifier: bitstring, salt: bitstring) =
+	let hash_input = hash((len(pw), pw, len(idProver), idProver, len(idVerifier), idVerifier)) in
+	kdf(salt, hash_input, nil).
+
+(* get the first output (w0/k_shared) *)
+fun split_1(key): key.
+(* get the second output (w1/k_confirm) *)
+fun split_2(key): key.
+
+reduc forall k: key; join_2(split_1(k) , split_2(k)) = k.
+
+(* group point *)
+type group.
+
+fun tc_group_bitstring(group): bitstring [typeConverter].
+
+(* p: group order, h: group co-factor *)
+const p, h: bitstring.
+
+const P, M, N: group.
+
+fun mod_p(group, bitstring) : bitstring.
+fun mul_point(group, bitstring): group.
+equation forall a: bitstring, b: bitstring; mul_point(mul_point(P, a), b) = mul_point(mul_point(P, b), a).
+equation forall a: bitstring, b: bitstring; mul_point(mul_point(M, a), b) = mul_point(mul_point(M, b), a).
+equation forall a: bitstring, b: bitstring; mul_point(mul_point(N, a), b) = mul_point(mul_point(N, b), a).
+
+
+fun add_pts(group, group): group.
+equation forall a: group, b: group; add_pts(a,b) = add_pts(b,a).
+reduc forall a: group, b: group; sub_pts(add_pts(a, b), b) = a.
+
+reduc forall x: bitstring, G: group; group_check(G, mul_point(G, x)) = true.
+
+fun group_check_sum(group, group): bool
+reduc forall x: bitstring, y: bitstring, G: group, Gx: group;
+		group_check_sum(G, add_pts(mul_point(G, x), mul_point(Gx, y))) = true
+	otherwise forall x: bitstring, y: bitstring, G: group, Gx: group;
+		group_check_sum(G, add_pts(mul_point(Gx, x), mul_point(G, y))) = true.
+	
+(* reduc forall x: bitstring, y: bitstring, G: group; group_check_mul(G, mul_point(mul_point(G, x), y)) = true. *)
+
+fun mul(bitstring, bitstring): bitstring.
+equation forall a: bitstring, b: bitstring; mul(a,b) = mul(b,a).
+
+letfun offline_phase(g: group, pw: bitstring, idProver: bitstring, idVerifier: bitstring, salt: bitstring) = 
+	(* ws = w0s || w1s  *)
+	let ws = pbkdf(pw, idProver, idVerifier, salt) in
+	let w0s = split_1 (ws) in
+	let w1s = split_2 (ws) in
+	
+	(* w0 = w0s mod p *)
+	let w0 = mod_p(g, tc_key_bitstring(w0s)) in
+	let w1 = mod_p(g, tc_key_bitstring(w1s)) in
+	let L = mul_point(g, w1) in
+	(w0, w1, L).
+
+let prover_process(
+	context: bitstring, idProver: bitstring, idVerifier: bitstring,
+	(* P: group, M: group, N: group, *)
+	pw: bitstring
+	) =
+
+	(* Registration Phase *)
+
+	(* Generate fresh salt *)
+	new salt: bitstring;
+	let (w0: bitstring, w1: bitstring, L: bitstring) = offline_phase(P, pw, idProver, idVerifier, salt) in
+	out(c, (w0, L));
+
+	(* Online Phase *)
+	
+	(* generate x *)
+	new x: bitstring;
+	(* X = (x*P + w0*M) *)
+	let X = add_pts(mul_point(P, x), mul_point(M, w0)) in
+	(* Send shareP == X *)
+	out(c, X);
+
+	(* Receive shareV == Y *)
+	in(c, Y: group);
+
+	(* Check group membership *)
+	if group_check_sum(P, Y) = true then
+		(* rhs = (Y - w0*N) *)
+		let rhs = sub_pts(Y, mul_point(N, w0)) in
+		
+		(* Z = h*x*(Y - w0*N) == h * x * rhs *)
+		let Z = mul_point(rhs, mul(h, x)) in
+		
+		(* V = h*w1*(Y - w0*N) == h * w1 * rhs *)
+		let V = mul_point(rhs, mul(h, w1)) in
+		let TT = (
+			len(context), context,
+			len(idProver), idProver,
+			len(idVerifier), idVerifier,
+			len(tc_group_bitstring(M)), tc_group_bitstring(M),
+			len(tc_group_bitstring(N)), tc_group_bitstring(N),
+			len(tc_group_bitstring(X)), tc_group_bitstring(X),
+			len(tc_group_bitstring(Y)), tc_group_bitstring(Y),
+			len(tc_group_bitstring(Z)), tc_group_bitstring(Z),
+			len(tc_group_bitstring(V)), tc_group_bitstring(V),
+			len(w0), w0
+		) in
+		let K_main = hash(TT) in
+		
+
+		(* K_confirm == K_confirmP || K_ConfirmV *)
+		let K_confirm = kdf(nil, K_main, confirmation_keys) in
+		let K_confirmP = split_1(K_confirm) in
+		let K_confirmV = split_2(K_confirm) in
+
+		(* query *)
+		out(c, enc(K_confirm, q_confirm_p));
+
+		let K_shared = kdf(nil, K_main, shared_key) in
+		
+		(* query *)
+		out(c, enc(K_shared, q_shared_p));
+		
+		let confirmP = mac(K_confirmP, tc_group_bitstring(Y)) in
+		let confirmV = mac(K_confirmV, tc_group_bitstring(X)) in
+		(* Send confirmV *)
+		out(c, confirmV);
+		
+		(* Receive confirmP *)
+		in(c, verifier_confirmP: bitstring);
+		(* Check Equality *)
+		if verifier_confirmP = confirmP then
+			0.
+
+let verifier_process(
+	context: bitstring,
+	idProver: bitstring, idVerifier: bitstring
+	) =
+	(* Registration Phase *)
+	(* Receive w0 and L *)
+	in(c, (w0: bitstring, L: group));
+
+	(* Generate y *)
+	new y: bitstring;
+	(* Y = (y*P + w0*N) *)
+	let Y = add_pts(mul_point(P, y), mul_point(N, w0)) in
+	(* Send shareV == Y *)
+	out(c, Y);
+
+
+	(* Receive shareP == X *)
+	in(c, X: group);
+	(* Check group membership *)
+	if group_check_sum(P, X) = true then
+		(* Z = (h * y) * (X - w0*M) *)
+		let Z = mul_point(sub_pts(X, mul_point(M, w0)), mul(h, y)) in
+		
+		(* V = h * y * L *)
+		let V = mul_point(L, mul(h, y)) in
+		let TT = (
+			len(context), context,
+			len(idProver), idProver,
+			len(idVerifier), idVerifier,
+			len(tc_group_bitstring(M)), tc_group_bitstring(M),
+			len(tc_group_bitstring(N)), tc_group_bitstring(N),
+			len(tc_group_bitstring(X)), tc_group_bitstring(X),
+			len(tc_group_bitstring(Y)), tc_group_bitstring(Y),
+			len(tc_group_bitstring(Z)), tc_group_bitstring(Z),
+			len(tc_group_bitstring(V)), tc_group_bitstring(V),
+			len(w0), w0
+		) in
+		let K_main = hash(TT) in
+
+		(* K_confirm == K_confirmP || K_ConfirmV *)
+		let K_confirm = kdf(nil, K_main, confirmation_keys) in
+		let K_confirmP = split_1(K_confirm) in
+		let K_confirmV = split_2(K_confirm) in
+		
+		(* query *)
+		out(c, enc(K_confirm, q_confirm_v));
+
+		let K_shared = kdf(nil, K_main, shared_key) in
+		
+		(* query *)
+		out(c, enc(K_shared, q_shared_v));
+
+		let confirmP = mac(K_confirmP, tc_group_bitstring(Y)) in
+		let confirmV = mac(K_confirmV, tc_group_bitstring(X)) in
+		(* Send confirmV *)
+		out(c, confirmP);
+		
+		(* Receive confirmV *)
+		in(c, prover_confirmV: bitstring);
+		(* Check Equality *)
+		if prover_confirmV = confirmV then
+			0.
+	
+
+
+fun context(group, group, group): bitstring.
+
+free idProver: bitstring.
+free idVerifier: bitstring.
+
+free pw: bitstring [private].
+weaksecret pw.
+
+query attacker(pw).
+
+process 
+	let ctx = context(P, M, N) in 
+	(!prover_process(ctx, idProver, idVerifier, pw)) |
+	(!verifier_process(ctx, idProver, idVerifier))
