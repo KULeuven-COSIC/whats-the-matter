@@ -104,3 +104,17 @@ The contents of this repository are as follows:
 ## How to Use
 
 Each directory’s `README.md` file provides specific instructions on running and understanding the tools included in that section. For any additional questions, please refer to the main documentation within each directory.
+
+## Citation
+
+If you find this work useful, please consider citing the following paper:
+
+```bibtex
+@misc{cryptoeprint:2025/1268,
+      author       = {Sayon Duttagupta and Arman Kolozyan and Georgio Nicolas and Bart Preneel and Dave Singelee},
+      title        = {What's the Matter? An In-Depth Security Analysis of the Matter Protocol},
+      howpublished = {Cryptology {ePrint} Archive, Paper 2025/1268},
+      year         = {2025},
+      url          = {https://eprint.iacr.org/2025/1268}
+}
+```
