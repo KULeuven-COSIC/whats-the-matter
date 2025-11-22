@@ -98,8 +98,8 @@ The contents of this repository are as follows:
 
 ## Specifications
 
-- `Matter-1.3-Core-Specification.pdf`: The core Matter specification (v1.3).
-- `Matter-1.4-Core-Specification.pdf`: The latest version of the specification (v1.4).
+- `Matter-1.3-Core-Specification.pdf`: Matter Core Specification, version 1.3.
+- `Matter-1.4-Core-Specification.pdf`: Matter Core Specification, version 1.4 (the latest version at the time of this research).
 
 ## How to Use
 
