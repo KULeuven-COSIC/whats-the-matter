@@ -9,11 +9,15 @@ import numpy as np
 
 
 # --- Configuration ---
-CHIP_TOOL_BUILD_DIR = "" # Add here the directory of chip-tool
-CHIP_TOOL_EXEC = os.path.join(CHIP_TOOL_BUILD_DIR, "chip-tool")
+CHIP_TOOL_BUILD_DIR = os.environ.get("CHIP_TOOL_BUILD_DIR", "")
+LIGHTING_APP_BUILD_DIR = os.environ.get("LIGHTING_APP_BUILD_DIR", "")
 
-LIGHTING_APP_BUILD_DIR = "" # Add here the directory of lighting-app (lighting-app/linux/out/debug)
+if not CHIP_TOOL_BUILD_DIR or not LIGHTING_APP_BUILD_DIR:
+    sys.exit("Set CHIP_TOOL_BUILD_DIR and LIGHTING_APP_BUILD_DIR. See the README.")
+
+CHIP_TOOL_EXEC = os.path.join(CHIP_TOOL_BUILD_DIR, "chip-tool")
 LIGHTING_APP_EXEC = os.path.join(LIGHTING_APP_BUILD_DIR, "chip-lighting-app")
+
 LIGHTING_APP_KVS = "/tmp/chip_kvs" # default KVS path for linux example
 
 TARGET_DISCRIMINATOR = 3840

@@ -1,9 +1,62 @@
 set attacker = active.
+set traceDisplay = long.
 
 (* Standard Communication Channel *)
 free c: channel.
 
-(* Queries *)
+const context_prefix_value: bitstring.
+
+event pbkdf_param_response_error(bitstring).
+event pase_key_verification_error(bitstring).
+event group_check_error(bitstring).
+
+type error.
+fun tc_error_bitstring(error): bitstring [typeConverter].
+const err_invalid_password_id: error.
+const err_invalid_session_id: error.
+
+(* ------------------------------------------------------ *)
+(* PASE Messages, ref: Figure 14 + Table 18 (Matter Spec) *)
+
+(* ----- *)
+(* Communicate PBKDF Parameters *)
+(* ----- *)
+
+
+
+(* -> PBKDF Parameter Request *)
+type pbkdf_param_request.
+fun tc_pbkdf_param_req_bitstring(pbkdf_param_request): bitstring [typeConverter].
+fun pbkdf_param_request_pack(
+    bitstring,  (* initiator random *)
+    bitstring,  (* initiator session ID *)
+    nat,        (* passcode ID *)
+    bool        (* has PBKDF parameters *)
+): pbkdf_param_request [data].
+
+(* <- PBKDF Parameter Response *)
+
+type pbkdf_param_response.
+fun tc_pbkdf_param_res_bitstring(pbkdf_param_response): bitstring [typeConverter].
+fun pbkdf_param_response_with_params(
+    bitstring,  (* initiator random *)
+    bitstring,  (* responder random *)
+    bitstring,  (* responder session ID *)
+    nat,        (* iteration count *)
+    bitstring   (* salt *)
+): pbkdf_param_response [data].
+
+fun pbkdf_param_response_without_params(
+    bitstring,  (* initiator random *)
+    bitstring,  (* responder random *)
+    bitstring  (* responder session ID *)
+): pbkdf_param_response [data].
+
+fun param_response_error(error): pbkdf_param_response [data].
+
+
+(* ------------------------------------------------------ *)
+
 free q_confirm_p, q_confirm_v, q_i2rkey, q_r2ikey: bitstring [private].
 query 
 	(* Message encrypted with the prover's confimation key *)
@@ -36,15 +89,17 @@ type length.
 const zero_len: length.
 fun len(bitstring): length.
 
-(* Type Converter between length and bitstring *)
-fun tc_length_bitstring(length): bitstring [typeConverter].
-
 const nil: bitstring.
 
 fun hash(bitstring): bitstring.
 
+(* hash function with n iterations *)
+fun hash_iter(bitstring, nat): bitstring.
+reduc forall x: bitstring; hash_0_iter(hash_iter(x, 0)) = x.
+reduc forall x: bitstring; hash_1_iter(hash_iter(x, 1)) = hash(x).
+reduc forall x: bitstring, a: nat; hash_iter_next(hash_iter(x, a)) = hash_iter(x, a + 1).
+
 fun mac(key, bitstring): bitstring.
-(* reduc forall k1: key, k2: key, m: bitstring, m2: bitstring; mac_verif(k1, m, mac(k2, m)) = (k1 == k2) && (m1 == m2). *)
 
 fun kdf(bitstring, bitstring, bitstring): key.
 
@@ -56,8 +111,15 @@ const confirmation_keys: bitstring.
 const sekeys_info: bitstring.
 
 
-letfun pbkdf(pw: bitstring, idProver: bitstring, idVerifier: bitstring, salt: bitstring) =
-	let hash_input = hash((len(pw), pw, len(idProver), idProver, len(idVerifier), idVerifier)) in
+letfun pbkdf_iter(pw: bitstring, idProver: bitstring, idVerifier: bitstring, salt: bitstring, iteration_count: nat) =
+	let hash_input = hash_iter(
+		(len(pw), pw, len(idProver), idProver, len(idVerifier), idVerifier),
+		iteration_count) in
+	kdf(salt, hash_input, nil).
+
+letfun pbkdf(pw: bitstring, idProver: bitstring, idVerifier: bitstring, salt: bitstring, iteration_count: nat) =
+	let hash_input = hash(
+		(len(pw), pw, len(idProver), idProver, len(idVerifier), idVerifier)) in
 	kdf(salt, hash_input, nil).
 
 (* get the first output (w0/k_shared) *)
@@ -89,190 +151,309 @@ equation forall a: bitstring, b: bitstring; mul_point(mul_point(N, a), b) = mul_
 
 
 fun add_pts(group, group): group.
-equation forall a: group, b: group; add_pts(a,b) = add_pts(b,a).
-reduc forall a: group, b: group; sub_pts(add_pts(a, b), b) = a.
+fun sub_pts(group, group): group.
+equation forall a: group, b: group; sub_pts(add_pts(a, b), b) = a.
+equation forall a: group, b: group; add_pts(sub_pts(a, b), b) = a.
 
-reduc forall x: bitstring, G: group; group_check(G, mul_point(G, x)) = true.
+(* this is useless, but may be useful if the model is expanded with different types *)
+fun group_check(group, group): bool
+reduc forall G: group, X: group; group_check(G, X) = true.
 
-fun group_check_sum(group, group): bool
-reduc forall x: bitstring, y: bitstring, G: group, Gx: group;
-		group_check_sum(G, add_pts(mul_point(G, x), mul_point(Gx, y))) = true
-	otherwise forall x: bitstring, y: bitstring, G: group, Gx: group;
-		group_check_sum(G, add_pts(mul_point(Gx, x), mul_point(G, y))) = true.
-	
-(* reduc forall x: bitstring, y: bitstring, G: group; group_check_mul(G, mul_point(mul_point(G, x), y)) = true. *)
-
-fun mul(bitstring, bitstring): bitstring.
-equation forall a: bitstring, b: bitstring; mul(a,b) = mul(b,a).
-
-letfun offline_phase(g: group, pw: bitstring, idProver: bitstring, idVerifier: bitstring, salt: bitstring) = 
+(* ref. Spec 3.10, 4.14.1.2 *)
+letfun generate_crypto_pakevalues_initiator(
+	g: group, passcode: bitstring, salt: bitstring, iteration_count: nat) = 
 	(* ws = w0s || w1s  *)
-	let ws = pbkdf(pw, idProver, idVerifier, salt) in
+	let ws = pbkdf(passcode, nil, nil, salt, iteration_count) in
 	let w0s = split_1(ws) in
 	let w1s = split_2(ws) in
 	
 	(* w0 = w0s mod p *)
 	let w0 = mod_p(g, tc_key_bitstring(w0s)) in
 	let w1 = mod_p(g, tc_key_bitstring(w1s)) in
+	(w0, w1).
+	
+letfun generate_crypto_pakevalues_responder(
+	g: group, passcode: bitstring, salt: bitstring, iteration_count: nat) = 
+	let (w0: bitstring, w1: bitstring) = generate_crypto_pakevalues_initiator(g, passcode, salt, iteration_count) in
 	let L = mul_point(g, w1) in
-	(w0, w1, L).
+	(w0, L).
+
+(* for now ignore passcode_id and has_pbkdf_parameters *)
+letfun pbkdf_param_request_builder(initiator_random: bitstring, initiator_session_id: bitstring) = 
+	let passcode_id = 0 in
+	let has_pbkdf_parameters = false in
+	pbkdf_param_request_pack(initiator_random, initiator_session_id, passcode_id, has_pbkdf_parameters).
+
+letfun generate_pbkdf_param_request() = 
+    new initiator_random: bitstring;
+    new initiator_session_id: bitstring;
+    let param_request = pbkdf_param_request_builder(initiator_random,initiator_session_id) in
+    (initiator_random, initiator_session_id, param_request).
+	
+(* outputs PBKDFParamResponse or error *)
+letfun process_pbkdf_param_request(iteration_count: nat, salt: bitstring,
+	initiator_random: bitstring, initiator_session_id: bitstring,
+	passcode_id: nat, has_pbkdf_parameters: bool) = 
+	if passcode_id = 0 then (
+		new responder_random: bitstring;
+		new responder_session_id: bitstring;
+
+		if has_pbkdf_parameters = false then (
+			pbkdf_param_response_with_params(
+				initiator_random, responder_random, responder_session_id, iteration_count, salt)
+		) else (
+			pbkdf_param_response_without_params(initiator_random, responder_random, responder_session_id)
+		)
+	) else (
+		param_response_error(err_invalid_password_id)
+	).
+
+letfun generate_context_string(req: pbkdf_param_request, res: pbkdf_param_response) =
+hash((context_prefix_value, tc_pbkdf_param_req_bitstring(req), tc_pbkdf_param_res_bitstring(res))).
+
+
+(* pre-flight messages. *)
+event prover_send_paramreq(bitstring).                 (* initiator_random *)
+event verifier_recv_paramreq(bitstring).               (* initiator_random *)
+event verifier_send_paramresp(bitstring, bitstring).   (* initiator_random, context *)
+event prover_recv_paramresp(bitstring, bitstring).     (* initiator_random, context *)
+
+(* passcode/(w0,L) binding *)
+event prover_uses_passcode(bitstring, bitstring, bitstring).  (* context, passcode, w0 *)
+event verifier_uses_credential(bitstring, bitstring, group).  (* context, w0, L *)
+
+(* Protocol messages. *)
+event prover_send_pake1(bitstring, group).                    (* context, X *)
+event verifier_recv_pake1(bitstring, group).                  (* context, X *)
+event verifier_send_pake2(bitstring, group, group, bitstring).(* context, X, Y, K_main *)
+event prover_recv_pake2(bitstring, group, group).             (* context, X, Y *)
+event prover_send_pake3(bitstring, group, group, bitstring).  (* context, X, Y, K_main *)
+event verifier_recv_pake3(bitstring, group, group, bitstring).(* context, X, Y, K_main *)
+
+
+(* Reachability *)
+event verifier_success(bitstring, group, group, bitstring).(* context, X, Y, K_main *)
+event prover_success(bitstring, group, group, bitstring).  (* context, X, Y, K_main *)
+
+
 
 let prover_process(
-	context: bitstring, idProver: bitstring, idVerifier: bitstring,
-	(* P: group, M: group, N: group, *)
-	pw: bitstring, salt: bitstring
-	) =
+	P: group, M: group, N: group,
+	password: bitstring) =
+	(* only used for debugging *)
+	new dummy: bitstring;
+	(* Pre-PASE *)
 
-	(* Registration Phase *)
+	let (
+    	initiator_random: bitstring,
+    	initiator_session_id: bitstring,
+    	param_request: pbkdf_param_request) = generate_pbkdf_param_request() in
 
-	(* Generate fresh salt *)
-	(* new salt: bitstring; *)
-	let (w0: bitstring, w1: bitstring, L: bitstring) = offline_phase(P, pw, idProver, idVerifier, salt) in
-	out(c, (w0, L));
+	event prover_send_paramreq(initiator_random);
+	out(c, param_request);
 
-	(* Online Phase *)
-	
-	(* generate x *)
-	new x: bitstring;
-	(* X = (x*P + w0*M) *)
-	let X = add_pts(mul_point(P, x), mul_point(M, w0)) in
-	(* Send shareP == X *)
-	out(c, X);
+	in (c, param_response: pbkdf_param_response);
 
-	(* Receive shareV == Y *)
-	in(c, Y: group);
+	if param_response = param_response_error(err_invalid_password_id) then (
+	    event pbkdf_param_response_error(dummy)
+	) else (
 
-	(* Check group membership *)
-	if group_check_sum(P, Y) = true then
-		(* rhs = (Y - w0*N) *)
-		let rhs = sub_pts(Y, mul_point(N, w0)) in
+		let context = generate_context_string(param_request, param_response) in
+		event prover_recv_paramresp(initiator_random, context);
 		
-		(* Z = h*x*(Y - w0*N) == h * x * rhs *)
-		let Z = mul_point(rhs, mul(h, x)) in
+		let pbkdf_param_response_with_params(
+    		=initiator_random,
+    		responder_random: bitstring,
+    		responder_session_id: bitstring,
+    		r_iter_count: nat,
+    		r_salt: bitstring
+		) = param_response in
+
+		let (w0: bitstring, w1: bitstring) = generate_crypto_pakevalues_initiator(P, password, r_salt, r_iter_count) in
+		event prover_uses_passcode(context, password, w0);
+		(* Online Phase *)
+		(* generate x *)
+		new x: bitstring;
+		(* X = (x*P + w0*M) *)
+		let X = add_pts(mul_point(P, x), mul_point(M, w0)) in
+		event prover_send_pake1(context, X);
 		
-		(* V = h*w1*(Y - w0*N) == h * w1 * rhs *)
-		let V = mul_point(rhs, mul(h, w1)) in
-		let TT = (
-			len(context), context,
-			len(idProver), idProver,
-			len(idVerifier), idVerifier,
-			len(tc_group_bitstring(M)), tc_group_bitstring(M),
-			len(tc_group_bitstring(N)), tc_group_bitstring(N),
-			len(tc_group_bitstring(X)), tc_group_bitstring(X),
-			len(tc_group_bitstring(Y)), tc_group_bitstring(Y),
-			len(tc_group_bitstring(Z)), tc_group_bitstring(Z),
-			len(tc_group_bitstring(V)), tc_group_bitstring(V),
-			len(w0), w0
-		) in
-		let K_main = hash(TT) in
-		let Ka = split_1_bitstring(K_main) in
-		let Ke = split_2_bitstring(K_main) in
+		(* Send PAKE Contribution *)
+		(* X == pA *)
+		out(c, X);
 
+		(* Receive  PAKE Contribution\PAKE Verification *)
+		in(c, (Y: group, responder_cB: bitstring));
 
-		(* K_confirm == K_confirmP || K_ConfirmV *)
-		let K_confirm = kdf(nil, K_main, confirmation_keys) in
-		let KcA = split_1(K_confirm) in
-		let KcB = split_2(K_confirm) in
+		(* Check group membership *)
+		let true = group_check(P, Y) in (
+			event prover_recv_pake2(context, X, Y);
+			(* rhs = (Y - w0*N) *)
+			let rhs = sub_pts(Y, mul_point(N, w0)) in
 
-		(* query *)
-		out(c, enc(K_confirm, q_confirm_p));
+			(* Z = h*x*(Y - w0*N) == h * x * rhs *)
+			let Z = mul_point(mul_point(rhs, x), h) in
 
-		let K_shared = kdf(nil, K_main, shared_key) in
-			
-		let cA = mac(KcA, tc_group_bitstring(Y)) in
-		let cB = mac(KcB, tc_group_bitstring(X)) in
-		(* Send confirmP *)
-		out(c, cA);
-		
-		(* Receive confirmV *)
-		in(c, verifier_confirmV: bitstring);
-		(* Check Equality *)
-		if verifier_confirmV = cB then
-			let keys = kdf(nil, Ke, sekeys_info) in
-			let I2RKey = split_1(keys) in
-			let R2IKey = split_2(keys) in
+			(* V = h*w1*(Y - w0*N) == h * w1 * rhs *)
+			let V = mul_point(mul_point(rhs, w1), h) in
+			let TT = (
+				len(context), context,
+				zero_len, 0,
+				len(tc_group_bitstring(M)), tc_group_bitstring(M),
+				len(tc_group_bitstring(N)), tc_group_bitstring(N),
+				(* pA == X *)
+				len(tc_group_bitstring(X)), tc_group_bitstring(X),
+				(* pB == Y *)
+				len(tc_group_bitstring(Y)), tc_group_bitstring(Y),
+				len(tc_group_bitstring(Z)), tc_group_bitstring(Z),
+				len(tc_group_bitstring(V)), tc_group_bitstring(V),
+				len(w0), w0
+			) in
+			let K_main = hash(TT) in
+			let Ka = split_1_bitstring(K_main) in
+			let Ke = split_2_bitstring(K_main) in
+
+			(* K_confirm == K_confirmP || K_ConfirmV *)
+			let K_confirm = kdf(nil, Ka, confirmation_keys) in
+			let KcA = split_1(K_confirm) in
+			let KcB = split_2(K_confirm) in
+
 			(* query *)
-			out(c, enc(R2IKey, q_r2ikey));
-			let AttestationChallenge = split_3(keys) in
-			0.
+			out(c, enc(K_confirm, q_confirm_p));
+
+			let cA = mac(KcA, tc_group_bitstring(Y)) in
+			let cB = mac(KcB, tc_group_bitstring(X)) in
+	
+			(* Check Equality *)
+			if responder_cB = cB then (
+				(* Send Pake Verification *)
+				event prover_send_pake3(context, X, Y, K_main);
+				out(c, cA);
+				let keys = kdf(nil, Ke, sekeys_info) in
+				let I2RKey = split_1(keys) in
+				let R2IKey = split_2(keys) in
+				let AttestationChallenge = split_3(keys) in
+				
+				(* query *)
+				out(c, enc(R2IKey, q_r2ikey));
+
+				event prover_success(context, X, Y, K_main)
+			) else (
+				event pase_key_verification_error(dummy)
+			)
+		) else (
+	    	event group_check_error(dummy)
+		)
+	).
 
 let verifier_process(
-	context: bitstring,
-	idProver: bitstring, idVerifier: bitstring
+	P: group, M: group, N: group,
+	w0: bitstring, L: group,
+	salt: bitstring,
+	iteration_count: nat
 	) =
-	(* Registration Phase *)
-	(* Receive w0 and L *)
-	in(c, (w0: bitstring, L: group));
+	new dummy: bitstring;
+	in(c, param_request: pbkdf_param_request);
 
-	(* Generate y *)
-	new y: bitstring;
-	(* Y = (y*P + w0*N) *)
-	let Y = add_pts(mul_point(P, y), mul_point(N, w0)) in
-	(* Send shareV == Y *)
-	out(c, Y);
+	let pbkdf_param_request_pack(
+    	initiator_random: bitstring,
+    	initiator_session_id: bitstring,
+    	passcode_id: nat,
+    	has_pbkdf_parameters: bool
+	) = param_request in
+	event verifier_recv_paramreq(initiator_random);
 
+	(* new salt: bitstring; *)
+	let res = process_pbkdf_param_request(iteration_count, salt,
+	initiator_random, initiator_session_id,
+	passcode_id, has_pbkdf_parameters) in
 
-	(* Receive shareP == X *)
-	in(c, X: group);
-	(* Check group membership *)
-	if group_check_sum(P, X) = true then
-		(* Z = (h * y) * (X - w0*M) *)
-		let Z = mul_point(sub_pts(X, mul_point(M, w0)), mul(h, y)) in
+	if res = param_response_error(err_invalid_password_id) then (
+		out(c, res);
+		event pbkdf_param_response_error(dummy)
+	) else (
+		let r_ctx = generate_context_string(param_request, res) in
+		(* send-marking events MUST precede the actual output: otherwise the
+		   peer's receive event can fire before this send event and the
+		   send-before-receive ordering correspondences become unprovable *)
+		event verifier_uses_credential(r_ctx, w0, L);
 		
-		(* V = h * y * L *)
-		let V = mul_point(L, mul(h, y)) in
-		let TT = (
-			len(context), context,
-			len(idProver), idProver,
-			len(idVerifier), idVerifier,
-			len(tc_group_bitstring(M)), tc_group_bitstring(M),
-			len(tc_group_bitstring(N)), tc_group_bitstring(N),
-			len(tc_group_bitstring(X)), tc_group_bitstring(X),
-			len(tc_group_bitstring(Y)), tc_group_bitstring(Y),
-			len(tc_group_bitstring(Z)), tc_group_bitstring(Z),
-			len(tc_group_bitstring(V)), tc_group_bitstring(V),
-			len(w0), w0
-		) in
-		let K_main = hash(TT) in
-		let Ka = split_1_bitstring(K_main) in
-		let Ke = split_2_bitstring(K_main) in
+		event verifier_send_paramresp(initiator_random, r_ctx);
+		out(c, res);
 
-		(* K_confirm == K_confirmP || K_ConfirmV *)
-		let K_confirm = kdf(nil, Ka, confirmation_keys) in
-		let KcA = split_1(K_confirm) in
-		let KcB = split_2(K_confirm) in
+
+
+		(* Receive shareP == X *)
+		in(c, X: group);
+		event verifier_recv_pake1(r_ctx, X);
+
+		(* Generate y *)
+		new y: bitstring;
+		(* Y = (y*P + w0*N) *)
+		let Y = add_pts(mul_point(P, y), mul_point(N, w0)) in
+
+
+		(* Check group membership *)
+		let true = group_check(P, X) in (
+			(* Z = (h * y) * (X - w0*M) *)
+			let Z = mul_point(mul_point(sub_pts(X, mul_point(M, w0)), y), h) in
 		
-		(* query *)
-		out(c, enc(K_confirm, q_confirm_v));
+			(* V = h * y * L *)
+			let V = mul_point(mul_point(L, y), h) in
+			let TT = (
+				len(r_ctx), r_ctx,
+				zero_len, 0,
+				len(tc_group_bitstring(M)), tc_group_bitstring(M),
+				len(tc_group_bitstring(N)), tc_group_bitstring(N),
+				(* pA == X *)
+				len(tc_group_bitstring(X)), tc_group_bitstring(X),
+				(* pB == Y *)
+				len(tc_group_bitstring(Y)), tc_group_bitstring(Y),
+				len(tc_group_bitstring(Z)), tc_group_bitstring(Z),
+				len(tc_group_bitstring(V)), tc_group_bitstring(V),
+				len(w0), w0
+			) in
+			let K_main = hash(TT) in
+			let Ka = split_1_bitstring(K_main) in
+			let Ke = split_2_bitstring(K_main) in
 
-		let K_shared = kdf(nil, K_main, shared_key) in
-	
-	
-
-		let cA = mac(KcA, tc_group_bitstring(Y)) in
-		let cB = mac(KcB, tc_group_bitstring(X)) in
-		(* Send confirmV *)
-		out(c, cB);
-		
-		(* Receive confirmP *)
-		in(c, prover_cA: bitstring);
-		(* Check Equality *)
-		if prover_cA = cA then
-			let keys = kdf(nil, Ke, sekeys_info) in
-			let I2RKey = split_1(keys) in
-			let R2IKey = split_2(keys) in
-			let AttestationChallenge = split_3(keys) in
+			(* K_confirm == K_confirmP || K_ConfirmV *)
+			let K_confirm = kdf(nil, Ka, confirmation_keys) in
+			let KcA = split_1(K_confirm) in
+			let KcB = split_2(K_confirm) in
 
 			(* query *)
-			out(c, enc(I2RKey, q_i2rkey));
-			0.
-	
+			out(c, enc(K_confirm, q_confirm_v));
 
+			let cA = mac(KcA, tc_group_bitstring(Y)) in
+			let cB = mac(KcB, tc_group_bitstring(X)) in
 
-fun context(group, group, group): bitstring.
+			(* Send (pB==Y, cB) *)
+			(* Pake Contribution\PAKE Verification *)
+			event verifier_send_pake2(r_ctx, X, Y, K_main);
+			out(c, (Y, cB));
+		
+			(* Receive Pake Verification *)
+			in(c, prover_cA: bitstring);
+			(* Check Equality *)
+			if prover_cA = cA then (
+				event verifier_recv_pake3(r_ctx, X, Y, K_main);
+				let keys = kdf(nil, Ke, sekeys_info) in
+				let I2RKey = split_1(keys) in
+				let R2IKey = split_2(keys) in
+				let AttestationChallenge = split_3(keys) in
 
-free idProver: bitstring.
-free idVerifier: bitstring.
+				(* query *)
+				out(c, enc(I2RKey, q_i2rkey));
+
+				event verifier_success(r_ctx, X, Y, K_main)
+			) else (
+				event pase_key_verification_error(dummy)
+			)
+		) else (
+			event group_check_error(dummy)
+		)
+	).
 
 free pw: bitstring [private].
 free salt: bitstring [private].
@@ -281,16 +462,164 @@ weaksecret pw.
 
 (* Check: the attacker does not obtain the password before it's leaked in Phase 1. *)
 not attacker(pw) phase 0.
-(* Check: the attacker does not obtain the salt before it's leaked in Phase 2. *)
-not attacker(salt) phase 1.
 
 query attacker(pw).
 
-process 
-	let ctx = context(P, M, N) in 
-	(!prover_process(ctx, idProver, idVerifier, pw, salt)) |
-	(!verifier_process(ctx, idProver, idVerifier)) |
-	(* Phase 1: Attacker obtains the password. *)
-	(!(phase 1; out(c, pw))) |
-	(* Phase 2: Attacker obtains the salt. *)
-	(!(phase 2; out(c, salt)))
+(* Mutual state agreement at protocol end, over a full unique transcript (context + both shares + K_main). *)
+query ctx: bitstring, X: group, Y: group, k: bitstring;
+	inj-event(verifier_recv_pake3(ctx, X, Y, k)) ==> inj-event(prover_send_pake3(ctx, X, Y, k)).
+
+query ctx: bitstring, X: group, Y: group, k: bitstring;
+	inj-event(prover_success(ctx, X, Y, k)) ==> inj-event(verifier_send_pake2(ctx, X, Y, k)).
+
+
+(* These queries proves that before the a party thinks it succeded, all other expected events have fired (but not necessarily in order). *)
+(* The prover and the verifier agree on the state.*)
+(* We prove that the right order is followed in queries below. *)
+
+
+(* This query proves that if the prover believes it succeeded in executing the protocol,
+	then it executed all the steps required by the protocol,
+	and it must have interacted with a prover who executed their steps correctly as well. *)
+query initiator_rand: bitstring, ctx: bitstring, X: group, Y: group, k: bitstring, w0: bitstring, L: group;
+	inj-event(verifier_success(ctx, X, Y, k)) ==> (
+		inj-event(prover_send_pake3(ctx, X, Y, k)) &&
+		inj-event(prover_recv_pake2(ctx, X, Y)) &&
+		inj-event(verifier_send_pake2(ctx, X, Y, k)) &&
+		inj-event(verifier_recv_pake1(ctx, X)) &&
+		inj-event(prover_send_pake1(ctx, X)) &&
+		inj-event(prover_recv_paramresp(initiator_rand, ctx)) &&
+		inj-event(verifier_send_paramresp(initiator_rand, ctx)) &&
+		inj-event(verifier_recv_paramreq(initiator_rand)) &&
+		inj-event(prover_send_paramreq(initiator_rand)) &&
+		(* the prover ran with the real passcode pw, and both sides used the same w0 *)
+		inj-event(prover_uses_passcode(ctx, pw, w0)) &&
+		inj-event(verifier_uses_credential(ctx, w0, L))
+	).
+
+(* This query proves that if the prover believes it succeeded in executing the protocol,
+	then it executed all the steps required by the protocol,
+	and it must have interacted with a verifier who executed their steps correctly as well. *)
+query initiator_rand: bitstring, ctx: bitstring, X: group, Y: group, k: bitstring, w0: bitstring, L: group;
+	inj-event(prover_success(ctx, X, Y, k)) ==> (
+		inj-event(verifier_send_pake2(ctx, X, Y, k)) &&
+		inj-event(verifier_recv_pake1(ctx, X)) &&
+		inj-event(prover_send_pake3(ctx, X, Y, k)) &&
+		inj-event(prover_recv_pake2(ctx, X, Y)) &&
+		inj-event(prover_send_pake1(ctx, X)) &&
+		inj-event(prover_recv_paramresp(initiator_rand, ctx)) &&
+		inj-event(verifier_send_paramresp(initiator_rand, ctx)) &&
+		inj-event(verifier_recv_paramreq(initiator_rand)) &&
+		inj-event(prover_send_paramreq(initiator_rand)) &&
+		inj-event(prover_uses_passcode(ctx, pw, w0)) &&
+		inj-event(verifier_uses_credential(ctx, w0, L))
+	).
+
+
+(* These queries prove that for a successful protocol execution, events must fire in order. *)
+(* I.E. all the steps required by the protocol were executed in the correct sequence. *)
+
+(* Proverif was unable to prove end-to-end queries. Probably because of depth *)
+(* We resorted to chain sequences of ~3 events at a time *)
+(* We also prove above that all events expected to fire do so (non-sequentially) above. *)
+
+(* These queries are for the sequence of prover events *)
+query ctx: bitstring, X: group, Y: group, k: bitstring;
+	inj-event(prover_success(ctx, X, Y, k)) ==> inj-event(prover_send_pake3(ctx, X, Y, k)).
+query ctx: bitstring, X: group, Y: group, k: bitstring;
+	inj-event(prover_send_pake3(ctx, X, Y, k)) ==> inj-event(prover_recv_pake2(ctx, X, Y)).
+query ctx: bitstring, X: group, Y: group;
+	inj-event(prover_recv_pake2(ctx, X, Y)) ==> inj-event(prover_send_pake1(ctx, X)).
+query initiator_rand: bitstring, ctx: bitstring, X: group;
+	inj-event(prover_send_pake1(ctx, X)) ==> inj-event(prover_recv_paramresp(initiator_rand, ctx)).
+query initiator_rand: bitstring, ctx: bitstring;
+	inj-event(prover_recv_paramresp(initiator_rand, ctx)) ==> inj-event(prover_send_paramreq(initiator_rand)).
+
+(* These queries are for the sequence of verifier events *)
+query ctx: bitstring, X: group, Y: group, k: bitstring;
+	inj-event(verifier_success(ctx, X, Y, k)) ==> inj-event(verifier_recv_pake3(ctx, X, Y, k)).
+query ctx: bitstring, X: group, Y: group, k: bitstring;
+	inj-event(verifier_recv_pake3(ctx, X, Y, k)) ==> inj-event(verifier_send_pake2(ctx, X, Y, k)).
+query ctx: bitstring, X: group, Y: group, k: bitstring;
+	inj-event(verifier_send_pake2(ctx, X, Y, k)) ==> inj-event(verifier_recv_pake1(ctx, X)).
+query initiator_rand: bitstring, ctx: bitstring, X: group;
+	inj-event(verifier_recv_pake1(ctx, X)) ==> inj-event(verifier_send_paramresp(initiator_rand, ctx)).
+query initiator_rand: bitstring, ctx: bitstring;
+	inj-event(verifier_send_paramresp(initiator_rand, ctx)) ==> inj-event(verifier_recv_paramreq(initiator_rand)).
+
+(* These queries are for the sequence of events crossed between prover and verifier *)
+query ctx: bitstring, X: group, Y: group, k: bitstring;
+	inj-event(verifier_success(ctx, X, Y, k)) ==> (
+		inj-event(verifier_recv_pake3(ctx, X, Y, k)) ==> inj-event(prover_send_pake3(ctx, X, Y, k))).
+query ctx: bitstring, X: group, Y: group, k: bitstring;
+	inj-event(prover_success(ctx, X, Y, k)) ==> (
+		inj-event(prover_recv_pake2(ctx, X, Y)) ==> inj-event(verifier_send_pake2(ctx, X, Y, k))).
+query ctx: bitstring, X: group, Y: group, k: bitstring;
+	inj-event(verifier_success(ctx, X, Y, k)) ==> (
+		inj-event(verifier_recv_pake1(ctx, X)) ==> inj-event(prover_send_pake1(ctx, X))).
+query initiator_rand: bitstring, ctx: bitstring, X: group, Y: group, k: bitstring;
+	inj-event(prover_success(ctx, X, Y, k)) ==> (
+		inj-event(prover_recv_paramresp(initiator_rand, ctx)) ==> inj-event(verifier_send_paramresp(initiator_rand, ctx))).
+query initiator_rand: bitstring, ctx: bitstring, X: group, Y: group, k: bitstring;
+	inj-event(prover_success(ctx, X, Y, k)) ==> (
+		inj-event(prover_recv_paramresp(initiator_rand, ctx)) ==> (
+			inj-event(verifier_recv_paramreq(initiator_rand)) ==> inj-event(prover_send_paramreq(initiator_rand)))).
+
+(* these should fail *)
+(* debug: reachability queries *)
+query ctx: bitstring, X: group, Y: group, k: bitstring; event(prover_success(ctx, X, Y, k)).
+query ctx: bitstring, X: group, Y: group, k: bitstring; event(verifier_success(ctx, X, Y, k)).
+
+query x: bitstring; event(pbkdf_param_response_error(x)).
+query x: bitstring; event(pase_key_verification_error(x)).
+
+(* this is unreachable, because all usable/injectable group elements are valid so true result is expected *)
+query x: bitstring; event(group_check_error(x)). 
+
+(* these fail. they show that the establishment is not done by the time these msgs are sent *)
+query ctx: bitstring, X: group;
+	inj-event(verifier_recv_pake1(ctx, X)) ==> inj-event(prover_send_pake1(ctx, X)).
+query ctx: bitstring, X: group, Y: group, k2: bitstring;
+	inj-event(prover_recv_pake2(ctx, X, Y)) ==> inj-event(verifier_send_pake2(ctx, X, Y, k2)).
+
+
+
+process
+	(* this emulates factory programming *)
+	(* salt is private (for now), static and declared above *)
+	(* the salt will become public when PBKDFParamResponse is sent *)
+	(* this can be any number. *)
+	let iteration_count = 1000 in
+	let (w0: bitstring, L: group) = generate_crypto_pakevalues_responder(P, pw, salt, iteration_count) in (
+		(!prover_process(P, M, N, pw)) |
+		(!verifier_process(P, M, N, w0, L, salt, iteration_count))
+		
+
+		(* ---------------------------------------------------------------------------------- *)
+		(* MODEL TWEAKS: *)
+
+		(* ------ *)
+		(* Claim: Leaking w0 -> Offline-Guessing Oracle *)
+		(* Leaking any of w0, L (or w1) leads to weak secret pw is false no other query changes. *)
+		(* this verifies our claim that if w0 is compromised,
+			then an offline guessing oracle becomes available to the attacker *)
+		
+		(* Uncomment below to leak w0 *)
+	    (* | (!(out(c, w0)))  *)
+
+		(* Leaking L causes proverif to have an internal error. We will be reporting that. *)
+	    (* | (!(out(c, L)))  *)
+		(* ------ *)
+
+		(* ------ *)
+		(* Claim: Forward Secrecy *)
+		(* Leaking the password does not compromise previously established sessions *)
+		
+		(* Uncomment below to test for forward-secrecy *)
+	    (* | (!(phase 1; out(c, pw)))  *)
+		(* make sure the leaking lines from the previous claim just above are commented when testing
+			for forward secrecy *)
+		(* The password becomes obtainable by the attacker, but all previously secure values remain secure *)
+		(* ------ *)
+		(* ---------------------------------------------------------------------------------- *)
+	)

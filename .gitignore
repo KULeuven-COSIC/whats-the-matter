@@ -1,5 +1,2 @@
-.DS_Store/
-/implementation-attacks/benchmarks/target/debug
-/implementation-attacks/benchmarks/target
-/benchmarks/target
-/attack-benchmarks/preComputation/tableGeneration/target
+.DS_Store
+target

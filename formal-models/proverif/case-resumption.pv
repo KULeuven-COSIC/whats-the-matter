@@ -33,9 +33,7 @@ reduc forall k: bitstring, m: bitstring; dec(k, enc(k, m)) = m.
 fun aead_enc(key, bitstring, bitstring, bitstring): bitstring.
 (* Symmetric Key Authenticated Encryption with Additional Data Decryption Rule *)
 reduc forall k: key, m: bitstring, n: bitstring, ad: bitstring; aead_dec(k, aead_enc(k, m, n, ad), n, ad) = m.
-(* Symmetric Key Authenticated Encryption with Additional Data Decryption Validation Rule *)
-reduc forall k: key, m: bitstring, n: bitstring, ad: bitstring;
-	aead_dec_validate(k, aead_enc(k, m, n, ad), n, ad) = true.
+
 
 const ncase_sigma2n: bitstring.
 const ncase_sigma3n: bitstring.
@@ -128,53 +126,56 @@ let initiator_process(
 	
 	(* decrypt message *)
 	let (responder_noc: group, responder_noc_signature: bitstring, sig_b: bitstring, resumption_id: bitstring) 
-		= aead_dec(s2k, cb, ncase_sigma2n, nil) in
+		= aead_dec(s2k, cb, ncase_sigma2n, nil) in (
 
-	if aead_dec_validate(s2k, cb, ncase_sigma2n, nil)
-		&& sign_verif(noc_verification_key, responder_noc_signature, tc_group_bitstring(responder_noc))
-		&& sign_verif(responder_noc, sig_b, (responder_noc, gy, gx))
-	then
+		if sign_verif(noc_verification_key, responder_noc_signature, tc_group_bitstring(responder_noc))
+			&& sign_verif(responder_noc, sig_b, (responder_noc, gy, gx))
+		then (
 
-		event accept_responder_identity(responder_noc, gy, responder_random);
-		let sig_i = sign(initiator_noc_key, (initiator_noc, gx, gy)) in
-		let s3k = kdf(tc_group_bitstring(shared_secret), (tc_key_bitstring(ipk), hash((msg1, msg2))), sigma3_info) in
-		let msg3 = aead_enc(s3k, (initiator_noc, initiator_noc_signature, sig_i), ncase_sigma3n, nil) in
-		out(c, msg3);
-		let keys = kdf(tc_group_bitstring(shared_secret), (ipk, hash((msg1, msg2, msg3))), sekeys_info) in
+			event accept_responder_identity(responder_noc, gy, responder_random);
+			let sig_i = sign(initiator_noc_key, (initiator_noc, gx, gy)) in
+			let s3k = kdf(tc_group_bitstring(shared_secret), (tc_key_bitstring(ipk), hash((msg1, msg2))), sigma3_info) in
+			let msg3 = aead_enc(s3k, (initiator_noc, initiator_noc_signature, sig_i), ncase_sigma3n, nil) in
+			out(c, msg3);
+			let keys = kdf(tc_group_bitstring(shared_secret), (ipk, hash((msg1, msg2, msg3))), sekeys_info) in
+
+			(* queries *)
+			event initiator_end(initiator_noc, gx, initiator_random);
+
+			out(c, enc(tc_group_bitstring(initiator_noc), q_id_i_i));
+			out(c, enc(tc_group_bitstring(responder_noc), q_id_r_i));
+
+
+			out(c, fresh_x);
+			out(c, enc(x, q_eph_x));
+			out(c, enc(tc_group_bitstring(shared_secret), q_shared_secret_i));
+
+			out(c, enc(tc_key_bitstring(keys), q_session_keys_i));
+
+
+			(* CASE ENDS HERE *)
+
+			(* We can start resumption *)
+			new res_initiator_random: bitstring;
+			let s1rk = kdf(tc_group_bitstring(shared_secret), (res_initiator_random, resumption_id), sigma1_resume) in
+			let initiator_resume1_mic = aead_enc(s1rk, nil, resume1mic_nonce, nil) in
+			out(c, (res_initiator_random, resumption_id, initiator_resume1_mic));
+
+			in(c, (res_resumption_id: bitstring, responder_resume2_mic: bitstring));
+			let s2rk = kdf(tc_group_bitstring(shared_secret), (res_initiator_random, res_resumption_id), sigma2_resume) in
+
+			let _ = aead_dec(s2rk, responder_resume2_mic, resume2mic_nonce, nil) in (
+
 			
-		(* queries *)
-		event initiator_end(initiator_noc, gx, initiator_random);
-			
-		out(c, enc(tc_group_bitstring(initiator_noc), q_id_i_i));
-		out(c, enc(tc_group_bitstring(responder_noc), q_id_r_i));
-		
-		
-		out(c, fresh_x);
-		out(c, enc(x, q_eph_x));
-		out(c, enc(tc_group_bitstring(shared_secret), q_shared_secret_i));
-			
-		out(c, enc(tc_key_bitstring(keys), q_session_keys_i));
+				let resumption_keys = kdf(tc_group_bitstring(shared_secret), (res_initiator_random, res_resumption_id), sessionresumptionkeys) in
 
+				out(c, enc(tc_key_bitstring(resumption_keys), q_resumption_session_keys_i));
 
-		(* CASE ENDS HERE *)
-
-		(* We can start resumption *)
-		new res_initiator_random: bitstring;
-		let s1rk = kdf(tc_group_bitstring(shared_secret), (res_initiator_random, resumption_id), sigma1_resume) in
-		let initiator_resume1_mic = aead_enc(s1rk, nil, resume1mic_nonce, nil) in
-		out(c, (res_initiator_random, resumption_id, initiator_resume1_mic));
-
-		in(c, (res_resumption_id: bitstring, responder_resume2_mic: bitstring));
-		let s2rk = kdf(tc_group_bitstring(shared_secret), (res_initiator_random, res_resumption_id), sigma2_resume) in
-
-		if aead_dec_validate(s2rk, responder_resume2_mic, resume2mic_nonce, nil) then
-			let resumption_keys = kdf(tc_group_bitstring(shared_secret), (res_initiator_random, res_resumption_id), sessionresumptionkeys) in
-			
-			out(c, enc(tc_key_bitstring(resumption_keys), q_resumption_session_keys_i));
-
-			new dummy: bitstring;
-			event did_not_reach_end_initiator(dummy);
-			0.
+				new dummy: bitstring;
+				event did_not_reach_end_initiator(dummy)
+			)
+		)
+	).
 
 let responder_process(
 	seed_y: bitstring,
@@ -243,15 +244,11 @@ let responder_process(
 	) in
 
 	let (initiator_noc: group, initiator_noc_signature: bitstring, sig_i: bitstring)
-		= aead_dec(s3k, msg3, ncase_sigma3n, nil) in
-	
-	if aead_dec_validate(s3k, msg3, ncase_sigma3n, nil) then 
-		if sign_verif(
-			noc_verification_key,
-			initiator_noc_signature, tc_group_bitstring(initiator_noc)
-			) 
+		= aead_dec(s3k, msg3, ncase_sigma3n, nil) in (
+		if sign_verif(noc_verification_key, initiator_noc_signature, tc_group_bitstring(initiator_noc)) 
 			&& sign_verif(initiator_noc, sig_i, (initiator_noc, gx, gy))
-		then
+		then (
+
 			let keys = kdf(
 				tc_group_bitstring(shared_secret),
 				(ipk, hash((msg1, msg2, msg3))),
@@ -259,14 +256,14 @@ let responder_process(
 			) in
 
 			out(c, sigma_finished);
-				
+
 			(* queries *)
 
 			event responder_end(responder_noc, gy, responder_random);
-		
+
 			out(c, enc(tc_group_bitstring(initiator_noc), q_id_i_r));
 			out(c, enc(tc_group_bitstring(responder_noc), q_id_r_r));
-				
+
 
 			out(c, fresh_y);
 			out(c, enc(y, q_eph_y));
@@ -282,17 +279,19 @@ let responder_process(
 
 			in(c, (res_initiator_random: bitstring, resumption_id: bitstring, initiator_resume1_mic: bitstring));
 			let s1rk = kdf(tc_group_bitstring(shared_secret), (res_initiator_random, resumption_id), sigma1_resume) in
-			if aead_dec_validate(s1rk, initiator_resume1_mic, resume1mic_nonce, nil) then
+			let _ = aead_dec(s1rk, initiator_resume1_mic, resume1mic_nonce, nil) in (
 				new resumption_id: bitstring;
 				let s2rk = kdf(tc_group_bitstring(shared_secret), (res_initiator_random, resumption_id), sigma2_resume) in
 				let responder_resume2_mic = aead_enc(s2rk, nil, resume2mic_nonce, nil) in
 				out(c, (resumption_id, responder_resume2_mic));
 				let resumption_keys = kdf(tc_group_bitstring(shared_secret), (res_initiator_random, resumption_id), sessionresumptionkeys) in
 				out(c, enc(tc_key_bitstring(resumption_keys), q_resumption_session_keys_r));
-				
+
 				new dummy: bitstring;
-				event did_not_reach_end_responder(dummy);
-				0.
+				event did_not_reach_end_responder(dummy)
+			)
+		)
+	).
 
 (* This query checks Initiator to Responder Authentication *)
 query noc: group, k: group, r: bitstring; inj-event(responder_end(noc, k, r))
@@ -326,8 +325,8 @@ query attacker(q_eph_y).
 
 (* These queries check if the attacker can obtain the shared_secret *)
 (* Should not leak before an ephemeral key is leaked *)
-not attacker(q_session_keys_i) phase 0.
-not attacker(q_session_keys_r) phase 0.
+not attacker(q_shared_secret_i) phase 0.
+not attacker(q_shared_secret_r) phase 0.
 query attacker(q_shared_secret_i).
 query attacker(q_shared_secret_r). 
 
@@ -389,12 +388,10 @@ process
 			noc_verification_key, ipk
 		)
 	))
-	|
 	(* Leak the second input to the hash function which yields x *)
-	(! (phase 1; out(c, seed_x)))
-	|
+	| (! (phase 1; out(c, seed_x)))
 	(* Leak the second input to the hash function which yields y *)
-	(! (phase 2; out(c, seed_y)))
+	| (! (phase 2; out(c, (seed_y))))
 	
 
 

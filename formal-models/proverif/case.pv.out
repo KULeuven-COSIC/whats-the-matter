@@ -30,7 +30,7 @@ Process 0 (that is, the initial process):
     {22}let shared_secret: group = mul_point(gy,x) in
     {23}let s2k: key = kdf(shared_secret,(ipk_1,responder_random,gy,hash(msg1)),sigma2_info) in
     {24}let (responder_noc: group,responder_noc_signature: bitstring,sig_b: bitstring,resumption_id: bitstring) = aead_dec(s2k,cb,ncase_sigma2n,nil) in
-    {25}if (aead_dec_validate(s2k,cb,ncase_sigma2n,nil) && (sign_verif(noc_verification_key,responder_noc_signature,responder_noc) && sign_verif(responder_noc,sig_b,(responder_noc,gy,gx)))) then
+    {25}if (sign_verif(noc_verification_key,responder_noc_signature,responder_noc) && sign_verif(responder_noc,sig_b,(responder_noc,gy,gx))) then
     {26}event accept_responder_identity(responder_noc,gy,responder_random);
     {27}let sig_i: bitstring = sign(initiator_noc_key_1,(initiator_noc,gx,gy)) in
     {28}let s3k: key = kdf(shared_secret,(ipk_1,hash((msg1,msg2))),sigma3_info) in
@@ -71,31 +71,30 @@ Process 0 (that is, the initial process):
     {62}in(c, msg3_1: bitstring);
     {63}let s3k_1: key = kdf(shared_secret_1,(ipk_2,hash((msg1_1,msg2_1))),sigma3_info) in
     {64}let (initiator_noc_1: group,initiator_noc_signature_1: bitstring,sig_i_1: bitstring) = aead_dec(s3k_1,msg3_1,ncase_sigma3n,nil) in
-    {65}if aead_dec_validate(s3k_1,msg3_1,ncase_sigma3n,nil) then
-    {66}if (sign_verif(noc_verification_key,initiator_noc_signature_1,initiator_noc_1) && sign_verif(initiator_noc_1,sig_i_1,(initiator_noc_1,gx_1,gy_1))) then
-    {67}let keys_1: key = kdf(shared_secret_1,(ipk_2,hash((msg1_1,msg2_1,msg3_1))),sekeys_info) in
-    {68}out(c, sigma_finished);
-    {69}event responder_end(responder_noc_1,gy_1,responder_random_1);
-    {70}out(c, enc(initiator_noc_1,q_id_i_r));
-    {71}out(c, enc(responder_noc_1,q_id_r_r));
-    {72}out(c, fresh_y);
-    {73}out(c, enc(y,q_eph_y));
-    {74}out(c, enc(shared_secret_1,q_shared_secret_r));
-    {75}out(c, enc(keys_1,q_session_keys_r));
-    {76}new dummy_1: bitstring;
-    {77}event did_not_reach_end_responder(dummy_1)
+    {65}if (sign_verif(noc_verification_key,initiator_noc_signature_1,initiator_noc_1) && sign_verif(initiator_noc_1,sig_i_1,(initiator_noc_1,gx_1,gy_1))) then
+    {66}let keys_1: key = kdf(shared_secret_1,(ipk_2,hash((msg1_1,msg2_1,msg3_1))),sekeys_info) in
+    {67}out(c, sigma_finished);
+    {68}event responder_end(responder_noc_1,gy_1,responder_random_1);
+    {69}out(c, enc(initiator_noc_1,q_id_i_r));
+    {70}out(c, enc(responder_noc_1,q_id_r_r));
+    {71}out(c, fresh_y);
+    {72}out(c, enc(y,q_eph_y));
+    {73}out(c, enc(shared_secret_1,q_shared_secret_r));
+    {74}out(c, enc(keys_1,q_session_keys_r));
+    {75}new dummy_1: bitstring;
+    {76}event did_not_reach_end_responder(dummy_1)
 ) | (
-    {78}!
-    {79}phase 1;
-    {80}out(c, seed_x)
+    {77}!
+    {78}phase 1;
+    {79}out(c, seed_x)
 ) | (
-    {81}!
-    {82}phase 2;
-    {83}out(c, seed_y)
+    {80}!
+    {81}phase 2;
+    {82}out(c, seed_y)
 ) | (
-    {84}!
-    {85}phase 3;
-    {86}out(c, ipk)
+    {83}!
+    {84}phase 3;
+    {85}out(c, ipk)
 )
 
 --  Process 1 (that is, process 0, with let moved downwards):
@@ -121,7 +120,7 @@ Process 0 (that is, the initial process):
     {12}let ipk_1: key = ipk in
     {23}let s2k: key = kdf(shared_secret,(ipk_1,responder_random,gy,hash(msg1)),sigma2_info) in
     {24}let (responder_noc: group,responder_noc_signature: bitstring,sig_b: bitstring,resumption_id: bitstring) = aead_dec(s2k,cb,ncase_sigma2n,nil) in
-    {25}if (aead_dec_validate(s2k,cb,ncase_sigma2n,nil) && (sign_verif(noc_verification_key,responder_noc_signature,responder_noc) && sign_verif(responder_noc,sig_b,(responder_noc,gy,gx)))) then
+    {25}if (sign_verif(noc_verification_key,responder_noc_signature,responder_noc) && sign_verif(responder_noc,sig_b,(responder_noc,gy,gx))) then
     {26}event accept_responder_identity(responder_noc,gy,responder_random);
     {28}let s3k: key = kdf(shared_secret,(ipk_1,hash((msg1,msg2))),sigma3_info) in
     {11}let initiator_noc_key_1: key = initiator_noc_key in
@@ -165,31 +164,30 @@ Process 0 (that is, the initial process):
     {62}in(c, msg3_1: bitstring);
     {63}let s3k_1: key = kdf(shared_secret_1,(ipk_2,hash((msg1_1,msg2_1))),sigma3_info) in
     {64}let (initiator_noc_1: group,initiator_noc_signature_1: bitstring,sig_i_1: bitstring) = aead_dec(s3k_1,msg3_1,ncase_sigma3n,nil) in
-    {65}if aead_dec_validate(s3k_1,msg3_1,ncase_sigma3n,nil) then
-    {66}if (sign_verif(noc_verification_key,initiator_noc_signature_1,initiator_noc_1) && sign_verif(initiator_noc_1,sig_i_1,(initiator_noc_1,gx_1,gy_1))) then
-    {68}out(c, sigma_finished);
-    {69}event responder_end(responder_noc_1,gy_1,responder_random_1);
-    {70}out(c, enc(initiator_noc_1,q_id_i_r));
-    {71}out(c, enc(responder_noc_1,q_id_r_r));
-    {72}out(c, fresh_y);
-    {73}out(c, enc(y,q_eph_y));
-    {74}out(c, enc(shared_secret_1,q_shared_secret_r));
-    {67}let keys_1: key = kdf(shared_secret_1,(ipk_2,hash((msg1_1,msg2_1,msg3_1))),sekeys_info) in
-    {75}out(c, enc(keys_1,q_session_keys_r));
-    {76}new dummy_1: bitstring;
-    {77}event did_not_reach_end_responder(dummy_1)
+    {65}if (sign_verif(noc_verification_key,initiator_noc_signature_1,initiator_noc_1) && sign_verif(initiator_noc_1,sig_i_1,(initiator_noc_1,gx_1,gy_1))) then
+    {67}out(c, sigma_finished);
+    {68}event responder_end(responder_noc_1,gy_1,responder_random_1);
+    {69}out(c, enc(initiator_noc_1,q_id_i_r));
+    {70}out(c, enc(responder_noc_1,q_id_r_r));
+    {71}out(c, fresh_y);
+    {72}out(c, enc(y,q_eph_y));
+    {73}out(c, enc(shared_secret_1,q_shared_secret_r));
+    {66}let keys_1: key = kdf(shared_secret_1,(ipk_2,hash((msg1_1,msg2_1,msg3_1))),sekeys_info) in
+    {74}out(c, enc(keys_1,q_session_keys_r));
+    {75}new dummy_1: bitstring;
+    {76}event did_not_reach_end_responder(dummy_1)
 ) | (
-    {78}!
-    {79}phase 1;
-    {80}out(c, seed_x)
+    {77}!
+    {78}phase 1;
+    {79}out(c, seed_x)
 ) | (
-    {81}!
-    {82}phase 2;
-    {83}out(c, seed_y)
+    {80}!
+    {81}phase 2;
+    {82}out(c, seed_y)
 ) | (
-    {84}!
-    {85}phase 3;
-    {86}out(c, ipk)
+    {83}!
+    {84}phase 3;
+    {85}out(c, ipk)
 )
 
 -- Query inj-event(responder_end(noc,k,r)) ==> inj-event(start_session_with_responder(k,r)) && inj-event(accept_responder_identity(noc,k,r)) in process 1.
@@ -513,8 +511,8 @@ ok, secrecy assumption verified: fact unreachable attacker(q_id_r_r[])
 ok, secrecy assumption verified: fact unreachable attacker(q_eph_x[])
 ok, secrecy assumption verified: fact unreachable attacker_p1(q_eph_y[])
 ok, secrecy assumption verified: fact unreachable attacker(q_eph_y[])
-ok, secrecy assumption verified: fact unreachable attacker(q_session_keys_i[])
-ok, secrecy assumption verified: fact unreachable attacker(q_session_keys_r[])
+ok, secrecy assumption verified: fact unreachable attacker(q_shared_secret_i[])
+ok, secrecy assumption verified: fact unreachable attacker(q_shared_secret_r[])
 ok, secrecy assumption verified: fact unreachable attacker_p2(q_session_keys_i[])
 ok, secrecy assumption verified: fact unreachable attacker_p1(q_session_keys_i[])
 ok, secrecy assumption verified: fact unreachable attacker(q_session_keys_i[])
@@ -522,7 +520,7 @@ ok, secrecy assumption verified: fact unreachable attacker_p2(q_session_keys_r[]
 ok, secrecy assumption verified: fact unreachable attacker_p1(q_session_keys_r[])
 ok, secrecy assumption verified: fact unreachable attacker(q_session_keys_r[])
 Starting query inj-event(responder_end(noc,k,r)) ==> inj-event(start_session_with_responder(k,r)) && inj-event(accept_responder_identity(noc,k,r))
-goal reachable: b-inj-event(accept_responder_identity(mul_point(P,responder_noc_key_2),mul_point(P,hash((seed_y[],fresh_y_1))),responder_random_2),@occ26_1) && b-inj-event(start_session_with_responder(mul_point(P,hash((seed_y[],fresh_y_1))),responder_random_2),@occ21_1) -> inj-event(responder_end(mul_point(P,responder_noc_key_2),mul_point(P,hash((seed_y[],fresh_y_1))),responder_random_2),@occ69_1)
+goal reachable: b-inj-event(accept_responder_identity(mul_point(P,responder_noc_key_2),mul_point(P,hash((seed_y[],fresh_y_1))),responder_random_2),@occ26_1) && b-inj-event(start_session_with_responder(mul_point(P,hash((seed_y[],fresh_y_1))),responder_random_2),@occ21_1) -> inj-event(responder_end(mul_point(P,responder_noc_key_2),mul_point(P,hash((seed_y[],fresh_y_1))),responder_random_2),@occ68_1)
 The 1st, 2nd hypotheses occur strictly before the conclusion.
 Abbreviations:
 responder_noc_key_2 = responder_noc_key[!1 = @sid]
@@ -532,7 +530,7 @@ fresh_y_1 = fresh_y[msg1_1 = (mul_point(P,hash((seed_x[],fresh_x_1))),initiator_
 responder_random_2 = responder_random_1[msg1_1 = (mul_point(P,hash((seed_x[],fresh_x_1))),initiator_random_2),!1 = @sid]
 resumption_id_2 = resumption_id_1[msg1_1 = (mul_point(P,hash((seed_x[],fresh_x_1))),initiator_random_2),!1 = @sid]
 initiator_noc_key_2 = initiator_noc_key[!1 = @sid_1]
-@occ69_1 = @occ69[msg3_1 = aead_enc(kdf(mul_point(mul_point(P,hash((seed_y[],fresh_y_1))),hash((seed_x[],fresh_x_1))),(ipk[],hash(((mul_point(P,hash((seed_x[],fresh_x_1))),initiator_random_2),(responder_random_2,mul_point(P,hash((seed_y[],fresh_y_1))),aead_enc(kdf(mul_point(mul_point(P,hash((seed_y[],fresh_y_1))),hash((seed_x[],fresh_x_1))),(ipk[],responder_random_2,mul_point(P,hash((seed_y[],fresh_y_1))),hash((mul_point(P,hash((seed_x[],fresh_x_1))),initiator_random_2))),sigma2_info),(mul_point(P,responder_noc_key_2),sign(noc_signing_key[],mul_point(P,responder_noc_key_2)),sign(responder_noc_key_2,(mul_point(P,responder_noc_key_2),mul_point(P,hash((seed_y[],fresh_y_1))),mul_point(P,hash((seed_x[],fresh_x_1))))),resumption_id_2),ncase_sigma2n,nil))))),sigma3_info),(mul_point(P,initiator_noc_key_2),sign(noc_signing_key[],mul_point(P,initiator_noc_key_2)),sign(initiator_noc_key_2,(mul_point(P,initiator_noc_key_2),mul_point(P,hash((seed_x[],fresh_x_1))),mul_point(P,hash((seed_y[],fresh_y_1)))))),ncase_sigma3n,nil),msg1_1 = (mul_point(P,hash((seed_x[],fresh_x_1))),initiator_random_2),!1 = @sid]
+@occ68_1 = @occ68[msg3_1 = aead_enc(kdf(mul_point(mul_point(P,hash((seed_y[],fresh_y_1))),hash((seed_x[],fresh_x_1))),(ipk[],hash(((mul_point(P,hash((seed_x[],fresh_x_1))),initiator_random_2),(responder_random_2,mul_point(P,hash((seed_y[],fresh_y_1))),aead_enc(kdf(mul_point(mul_point(P,hash((seed_y[],fresh_y_1))),hash((seed_x[],fresh_x_1))),(ipk[],responder_random_2,mul_point(P,hash((seed_y[],fresh_y_1))),hash((mul_point(P,hash((seed_x[],fresh_x_1))),initiator_random_2))),sigma2_info),(mul_point(P,responder_noc_key_2),sign(noc_signing_key[],mul_point(P,responder_noc_key_2)),sign(responder_noc_key_2,(mul_point(P,responder_noc_key_2),mul_point(P,hash((seed_y[],fresh_y_1))),mul_point(P,hash((seed_x[],fresh_x_1))))),resumption_id_2),ncase_sigma2n,nil))))),sigma3_info),(mul_point(P,initiator_noc_key_2),sign(noc_signing_key[],mul_point(P,initiator_noc_key_2)),sign(initiator_noc_key_2,(mul_point(P,initiator_noc_key_2),mul_point(P,hash((seed_x[],fresh_x_1))),mul_point(P,hash((seed_y[],fresh_y_1)))))),ncase_sigma3n,nil),msg1_1 = (mul_point(P,hash((seed_x[],fresh_x_1))),initiator_random_2),!1 = @sid]
 @occ26_1 = @occ26[msg2 = (responder_random_2,mul_point(P,hash((seed_y[],fresh_y_1))),aead_enc(kdf(mul_point(mul_point(P,hash((seed_y[],fresh_y_1))),hash((seed_x[],fresh_x_1))),(ipk[],responder_random_2,mul_point(P,hash((seed_y[],fresh_y_1))),hash((mul_point(P,hash((seed_x[],fresh_x_1))),initiator_random_2))),sigma2_info),(mul_point(P,responder_noc_key_2),sign(noc_signing_key[],mul_point(P,responder_noc_key_2)),sign(responder_noc_key_2,(mul_point(P,responder_noc_key_2),mul_point(P,hash((seed_y[],fresh_y_1))),mul_point(P,hash((seed_x[],fresh_x_1))))),resumption_id_2),ncase_sigma2n,nil)),!1 = @sid_1]
 @occ21_1 = @occ21[msg2 = (responder_random_2,mul_point(P,hash((seed_y[],fresh_y_1))),aead_enc(kdf(mul_point(mul_point(P,hash((seed_y[],fresh_y_1))),hash((seed_x[],fresh_x_1))),(ipk[],responder_random_2,mul_point(P,hash((seed_y[],fresh_y_1))),hash((mul_point(P,hash((seed_x[],fresh_x_1))),initiator_random_2))),sigma2_info),(mul_point(P,responder_noc_key_2),sign(noc_signing_key[],mul_point(P,responder_noc_key_2)),sign(responder_noc_key_2,(mul_point(P,responder_noc_key_2),mul_point(P,hash((seed_y[],fresh_y_1))),mul_point(P,hash((seed_x[],fresh_x_1))))),resumption_id_2),ncase_sigma2n,nil)),!1 = @sid_1]
 RESULT inj-event(responder_end(noc,k,r)) ==> inj-event(start_session_with_responder(k,r)) && inj-event(accept_responder_identity(noc,k,r)) is true.
@@ -772,8 +770,8 @@ ok, secrecy assumption verified: fact unreachable attacker(q_id_r_r[])
 ok, secrecy assumption verified: fact unreachable attacker(q_eph_x[])
 ok, secrecy assumption verified: fact unreachable attacker_p1(q_eph_y[])
 ok, secrecy assumption verified: fact unreachable attacker(q_eph_y[])
-ok, secrecy assumption verified: fact unreachable attacker(q_session_keys_i[])
-ok, secrecy assumption verified: fact unreachable attacker(q_session_keys_r[])
+ok, secrecy assumption verified: fact unreachable attacker(q_shared_secret_i[])
+ok, secrecy assumption verified: fact unreachable attacker(q_shared_secret_r[])
 ok, secrecy assumption verified: fact unreachable attacker_p2(q_session_keys_i[])
 ok, secrecy assumption verified: fact unreachable attacker_p1(q_session_keys_i[])
 ok, secrecy assumption verified: fact unreachable attacker(q_session_keys_i[])
@@ -1322,8 +1320,8 @@ ok, secrecy assumption verified: fact unreachable attacker(q_id_r_r[])
 ok, secrecy assumption verified: fact unreachable attacker(q_eph_x[])
 ok, secrecy assumption verified: fact unreachable attacker_p1(q_eph_y[])
 ok, secrecy assumption verified: fact unreachable attacker(q_eph_y[])
-ok, secrecy assumption verified: fact unreachable attacker(q_session_keys_i[])
-ok, secrecy assumption verified: fact unreachable attacker(q_session_keys_r[])
+ok, secrecy assumption verified: fact unreachable attacker(q_shared_secret_i[])
+ok, secrecy assumption verified: fact unreachable attacker(q_shared_secret_r[])
 ok, secrecy assumption verified: fact unreachable attacker_p2(q_session_keys_i[])
 ok, secrecy assumption verified: fact unreachable attacker_p1(q_session_keys_i[])
 ok, secrecy assumption verified: fact unreachable attacker(q_session_keys_i[])
@@ -1477,7 +1475,7 @@ attacker_p2(hash(((mul_point(P,hash((seed_x[],fresh_x_1))),initiator_random_2),(
 So the attacker may know hash(((mul_point(P,hash((seed_x[],fresh_x_1))),initiator_random_2),(responder_random_2,mul_point(P,hash((seed_y[],fresh_y_1))),aead_enc(kdf(mul_point(mul_point(P,hash((seed_x[],fresh_x_1))),hash((seed_y[],fresh_y_1))),(ipk[],responder_random_2,mul_point(P,hash((seed_y[],fresh_y_1))),hash((mul_point(P,hash((seed_x[],fresh_x_1))),initiator_random_2))),sigma2_info),(mul_point(P,responder_noc_key_2),sign(noc_signing_key[],mul_point(P,responder_noc_key_2)),sign(responder_noc_key_2,(mul_point(P,responder_noc_key_2),mul_point(P,hash((seed_y[],fresh_y_1))),mul_point(P,hash((seed_x[],fresh_x_1))))),resumption_id_2),ncase_sigma2n,nil)))) in phase 3.
 attacker_p3(hash(((mul_point(P,hash((seed_x[],fresh_x_1))),initiator_random_2),(responder_random_2,mul_point(P,hash((seed_y[],fresh_y_1))),aead_enc(kdf(mul_point(mul_point(P,hash((seed_x[],fresh_x_1))),hash((seed_y[],fresh_y_1))),(ipk[],responder_random_2,mul_point(P,hash((seed_y[],fresh_y_1))),hash((mul_point(P,hash((seed_x[],fresh_x_1))),initiator_random_2))),sigma2_info),(mul_point(P,responder_noc_key_2),sign(noc_signing_key[],mul_point(P,responder_noc_key_2)),sign(responder_noc_key_2,(mul_point(P,responder_noc_key_2),mul_point(P,hash((seed_y[],fresh_y_1))),mul_point(P,hash((seed_x[],fresh_x_1))))),resumption_id_2),ncase_sigma2n,nil))))).
 
-32. The message ipk[] may be sent to the attacker in phase 3 at output {86}.
+32. The message ipk[] may be sent to the attacker in phase 3 at output {85}.
 attacker_p3(ipk[]).
 
 33. By 32, the attacker may know ipk[] in phase 3.
@@ -1519,7 +1517,7 @@ attacker(fresh_x_1).
 So the attacker may know fresh_x_1 in phase 1.
 attacker_p1(fresh_x_1).
 
-42. The message seed_x[] may be sent to the attacker in phase 1 at output {80}.
+42. The message seed_x[] may be sent to the attacker in phase 1 at output {79}.
 attacker_p1(seed_x[]).
 
 43. By 42, the attacker may know seed_x[] in phase 1.
@@ -1647,9 +1645,9 @@ new dummy: bitstring creating dummy_2 at {39} in copy a_1
 
 event did_not_reach_end_initiator(dummy_2) at {40} in copy a_1
 
-out(c, ~M_13) with ~M_13 = seed_x_2 at {80} in copy a_2
+out(c, ~M_13) with ~M_13 = seed_x_2 at {79} in copy a_2
 
-out(c, ~M_14) with ~M_14 = ipk_3 at {86} in copy a_3
+out(c, ~M_14) with ~M_14 = ipk_3 at {85} in copy a_3
 
 The attacker has the message dec(1-proj-3-tuple(aead_dec(kdf(mul_point(~M_4,hash((~M_13,~M_9))),(~M_14,hash(((~M_1,~M_2),(~M_3,~M_4,~M_5)))),sigma3_info),~M_6,ncase_sigma3n,nil)),~M_7) = q_id_i_i in phase 3.
 A trace has been found.
@@ -2182,8 +2180,8 @@ ok, secrecy assumption verified: fact unreachable attacker(q_id_r_r[])
 ok, secrecy assumption verified: fact unreachable attacker(q_eph_x[])
 ok, secrecy assumption verified: fact unreachable attacker_p1(q_eph_y[])
 ok, secrecy assumption verified: fact unreachable attacker(q_eph_y[])
-ok, secrecy assumption verified: fact unreachable attacker(q_session_keys_i[])
-ok, secrecy assumption verified: fact unreachable attacker(q_session_keys_r[])
+ok, secrecy assumption verified: fact unreachable attacker(q_shared_secret_i[])
+ok, secrecy assumption verified: fact unreachable attacker(q_shared_secret_r[])
 ok, secrecy assumption verified: fact unreachable attacker_p2(q_session_keys_i[])
 ok, secrecy assumption verified: fact unreachable attacker_p1(q_session_keys_i[])
 ok, secrecy assumption verified: fact unreachable attacker(q_session_keys_i[])
@@ -2255,7 +2253,7 @@ attacker(aead_enc(kdf(mul_point(mul_point(P,hash((seed_x[],fresh_x_1))),hash((se
 
 11. The message (mul_point(P,hash((seed_x[],fresh_x_1))),initiator_random_2) that the attacker may have by 4 may be received at input {48}.
 The message aead_enc(kdf(mul_point(mul_point(P,hash((seed_x[],fresh_x_1))),hash((seed_y[],fresh_y_3))),(ipk[],hash(((mul_point(P,hash((seed_x[],fresh_x_1))),initiator_random_2),(responder_random_4,mul_point(P,hash((seed_y[],fresh_y_3))),aead_enc(kdf(mul_point(mul_point(P,hash((seed_x[],fresh_x_1))),hash((seed_y[],fresh_y_3))),(ipk[],responder_random_4,mul_point(P,hash((seed_y[],fresh_y_3))),hash((mul_point(P,hash((seed_x[],fresh_x_1))),initiator_random_2))),sigma2_info),(mul_point(P,responder_noc_key_4),sign(noc_signing_key[],mul_point(P,responder_noc_key_4)),sign(responder_noc_key_4,(mul_point(P,responder_noc_key_4),mul_point(P,hash((seed_y[],fresh_y_3))),mul_point(P,hash((seed_x[],fresh_x_1))))),resumption_id_4),ncase_sigma2n,nil))))),sigma3_info),(mul_point(P,initiator_noc_key_2),sign(noc_signing_key[],mul_point(P,initiator_noc_key_2)),sign(initiator_noc_key_2,(mul_point(P,initiator_noc_key_2),mul_point(P,hash((seed_x[],fresh_x_1))),mul_point(P,hash((seed_y[],fresh_y_3)))))),ncase_sigma3n,nil) that the attacker may have by 10 may be received at input {62}.
-So the message enc(mul_point(P,initiator_noc_key_2),q_id_i_r[]) may be sent to the attacker at output {70}.
+So the message enc(mul_point(P,initiator_noc_key_2),q_id_i_r[]) may be sent to the attacker at output {69}.
 attacker(enc(mul_point(P,initiator_noc_key_2),q_id_i_r[])).
 
 12. By 11, the attacker may know enc(mul_point(P,initiator_noc_key_2),q_id_i_r[]).
@@ -2338,7 +2336,7 @@ attacker_p2(hash(((mul_point(P,hash((seed_x[],fresh_x_1))),initiator_random_2),(
 So the attacker may know hash(((mul_point(P,hash((seed_x[],fresh_x_1))),initiator_random_2),(responder_random_2,mul_point(P,hash((seed_y[],fresh_y_1))),aead_enc(kdf(mul_point(mul_point(P,hash((seed_x[],fresh_x_1))),hash((seed_y[],fresh_y_1))),(ipk[],responder_random_2,mul_point(P,hash((seed_y[],fresh_y_1))),hash((mul_point(P,hash((seed_x[],fresh_x_1))),initiator_random_2))),sigma2_info),(mul_point(P,responder_noc_key_2),sign(noc_signing_key[],mul_point(P,responder_noc_key_2)),sign(responder_noc_key_2,(mul_point(P,responder_noc_key_2),mul_point(P,hash((seed_y[],fresh_y_1))),mul_point(P,hash((seed_x[],fresh_x_1))))),resumption_id_2),ncase_sigma2n,nil)))) in phase 3.
 attacker_p3(hash(((mul_point(P,hash((seed_x[],fresh_x_1))),initiator_random_2),(responder_random_2,mul_point(P,hash((seed_y[],fresh_y_1))),aead_enc(kdf(mul_point(mul_point(P,hash((seed_x[],fresh_x_1))),hash((seed_y[],fresh_y_1))),(ipk[],responder_random_2,mul_point(P,hash((seed_y[],fresh_y_1))),hash((mul_point(P,hash((seed_x[],fresh_x_1))),initiator_random_2))),sigma2_info),(mul_point(P,responder_noc_key_2),sign(noc_signing_key[],mul_point(P,responder_noc_key_2)),sign(responder_noc_key_2,(mul_point(P,responder_noc_key_2),mul_point(P,hash((seed_y[],fresh_y_1))),mul_point(P,hash((seed_x[],fresh_x_1))))),resumption_id_2),ncase_sigma2n,nil))))).
 
-32. The message ipk[] may be sent to the attacker in phase 3 at output {86}.
+32. The message ipk[] may be sent to the attacker in phase 3 at output {85}.
 attacker_p3(ipk[]).
 
 33. By 32, the attacker may know ipk[] in phase 3.
@@ -2380,7 +2378,7 @@ attacker(fresh_x_1).
 So the attacker may know fresh_x_1 in phase 1.
 attacker_p1(fresh_x_1).
 
-42. The message seed_x[] may be sent to the attacker in phase 1 at output {80}.
+42. The message seed_x[] may be sent to the attacker in phase 1 at output {79}.
 attacker_p1(seed_x[]).
 
 43. By 42, the attacker may know seed_x[] in phase 1.
@@ -2510,29 +2508,29 @@ event did_not_reach_end_initiator(dummy_2) at {40} in copy a_1
 
 in(c, ~M_6) with ~M_6 = aead_enc(kdf(mul_point(mul_point(P,hash((seed_x_2,fresh_x_2))),hash((seed_y_2,fresh_y_4))),(ipk_3,hash(((mul_point(P,hash((seed_x_2,fresh_x_2))),initiator_random_3),(responder_random_5,mul_point(P,hash((seed_y_2,fresh_y_4))),aead_enc(kdf(mul_point(mul_point(P,hash((seed_x_2,fresh_x_2))),hash((seed_y_2,fresh_y_4))),(ipk_3,responder_random_5,mul_point(P,hash((seed_y_2,fresh_y_4))),hash((mul_point(P,hash((seed_x_2,fresh_x_2))),initiator_random_3))),sigma2_info),(mul_point(P,responder_noc_key_5),sign(noc_signing_key,mul_point(P,responder_noc_key_5)),sign(responder_noc_key_5,(mul_point(P,responder_noc_key_5),mul_point(P,hash((seed_y_2,fresh_y_4))),mul_point(P,hash((seed_x_2,fresh_x_2))))),resumption_id_5),ncase_sigma2n,nil))))),sigma3_info),(mul_point(P,initiator_noc_key_3),sign(noc_signing_key,mul_point(P,initiator_noc_key_3)),sign(initiator_noc_key_3,(mul_point(P,initiator_noc_key_3),mul_point(P,hash((seed_x_2,fresh_x_2))),mul_point(P,hash((seed_y_2,fresh_y_4)))))),ncase_sigma3n,nil) at {62} in copy a
 
-out(c, ~M_13) with ~M_13 = sigma_finished at {68} in copy a
+out(c, ~M_13) with ~M_13 = sigma_finished at {67} in copy a
 
-event responder_end(mul_point(P,responder_noc_key_5),mul_point(P,hash((seed_y_2,fresh_y_4))),responder_random_5) at {69} in copy a
+event responder_end(mul_point(P,responder_noc_key_5),mul_point(P,hash((seed_y_2,fresh_y_4))),responder_random_5) at {68} in copy a
 
-out(c, ~M_14) with ~M_14 = enc(mul_point(P,initiator_noc_key_3),q_id_i_r) at {70} in copy a
+out(c, ~M_14) with ~M_14 = enc(mul_point(P,initiator_noc_key_3),q_id_i_r) at {69} in copy a
 
-out(c, ~M_15) with ~M_15 = enc(mul_point(P,responder_noc_key_5),q_id_r_r) at {71} in copy a
+out(c, ~M_15) with ~M_15 = enc(mul_point(P,responder_noc_key_5),q_id_r_r) at {70} in copy a
 
-out(c, ~M_16) with ~M_16 = fresh_y_4 at {72} in copy a
+out(c, ~M_16) with ~M_16 = fresh_y_4 at {71} in copy a
 
-out(c, ~M_17) with ~M_17 = enc(hash((seed_y_2,fresh_y_4)),q_eph_y) at {73} in copy a
+out(c, ~M_17) with ~M_17 = enc(hash((seed_y_2,fresh_y_4)),q_eph_y) at {72} in copy a
 
-out(c, ~M_18) with ~M_18 = enc(mul_point(mul_point(P,hash((seed_x_2,fresh_x_2))),hash((seed_y_2,fresh_y_4))),q_shared_secret_r) at {74} in copy a
+out(c, ~M_18) with ~M_18 = enc(mul_point(mul_point(P,hash((seed_x_2,fresh_x_2))),hash((seed_y_2,fresh_y_4))),q_shared_secret_r) at {73} in copy a
 
-out(c, ~M_19) with ~M_19 = enc(kdf(mul_point(mul_point(P,hash((seed_x_2,fresh_x_2))),hash((seed_y_2,fresh_y_4))),(ipk_3,hash(((mul_point(P,hash((seed_x_2,fresh_x_2))),initiator_random_3),(responder_random_5,mul_point(P,hash((seed_y_2,fresh_y_4))),aead_enc(kdf(mul_point(mul_point(P,hash((seed_x_2,fresh_x_2))),hash((seed_y_2,fresh_y_4))),(ipk_3,responder_random_5,mul_point(P,hash((seed_y_2,fresh_y_4))),hash((mul_point(P,hash((seed_x_2,fresh_x_2))),initiator_random_3))),sigma2_info),(mul_point(P,responder_noc_key_5),sign(noc_signing_key,mul_point(P,responder_noc_key_5)),sign(responder_noc_key_5,(mul_point(P,responder_noc_key_5),mul_point(P,hash((seed_y_2,fresh_y_4))),mul_point(P,hash((seed_x_2,fresh_x_2))))),resumption_id_5),ncase_sigma2n,nil)),aead_enc(kdf(mul_point(mul_point(P,hash((seed_x_2,fresh_x_2))),hash((seed_y_2,fresh_y_4))),(ipk_3,hash(((mul_point(P,hash((seed_x_2,fresh_x_2))),initiator_random_3),(responder_random_5,mul_point(P,hash((seed_y_2,fresh_y_4))),aead_enc(kdf(mul_point(mul_point(P,hash((seed_x_2,fresh_x_2))),hash((seed_y_2,fresh_y_4))),(ipk_3,responder_random_5,mul_point(P,hash((seed_y_2,fresh_y_4))),hash((mul_point(P,hash((seed_x_2,fresh_x_2))),initiator_random_3))),sigma2_info),(mul_point(P,responder_noc_key_5),sign(noc_signing_key,mul_point(P,responder_noc_key_5)),sign(responder_noc_key_5,(mul_point(P,responder_noc_key_5),mul_point(P,hash((seed_y_2,fresh_y_4))),mul_point(P,hash((seed_x_2,fresh_x_2))))),resumption_id_5),ncase_sigma2n,nil))))),sigma3_info),(mul_point(P,initiator_noc_key_3),sign(noc_signing_key,mul_point(P,initiator_noc_key_3)),sign(initiator_noc_key_3,(mul_point(P,initiator_noc_key_3),mul_point(P,hash((seed_x_2,fresh_x_2))),mul_point(P,hash((seed_y_2,fresh_y_4)))))),ncase_sigma3n,nil)))),sekeys_info),q_session_keys_r) at {75} in copy a
+out(c, ~M_19) with ~M_19 = enc(kdf(mul_point(mul_point(P,hash((seed_x_2,fresh_x_2))),hash((seed_y_2,fresh_y_4))),(ipk_3,hash(((mul_point(P,hash((seed_x_2,fresh_x_2))),initiator_random_3),(responder_random_5,mul_point(P,hash((seed_y_2,fresh_y_4))),aead_enc(kdf(mul_point(mul_point(P,hash((seed_x_2,fresh_x_2))),hash((seed_y_2,fresh_y_4))),(ipk_3,responder_random_5,mul_point(P,hash((seed_y_2,fresh_y_4))),hash((mul_point(P,hash((seed_x_2,fresh_x_2))),initiator_random_3))),sigma2_info),(mul_point(P,responder_noc_key_5),sign(noc_signing_key,mul_point(P,responder_noc_key_5)),sign(responder_noc_key_5,(mul_point(P,responder_noc_key_5),mul_point(P,hash((seed_y_2,fresh_y_4))),mul_point(P,hash((seed_x_2,fresh_x_2))))),resumption_id_5),ncase_sigma2n,nil)),aead_enc(kdf(mul_point(mul_point(P,hash((seed_x_2,fresh_x_2))),hash((seed_y_2,fresh_y_4))),(ipk_3,hash(((mul_point(P,hash((seed_x_2,fresh_x_2))),initiator_random_3),(responder_random_5,mul_point(P,hash((seed_y_2,fresh_y_4))),aead_enc(kdf(mul_point(mul_point(P,hash((seed_x_2,fresh_x_2))),hash((seed_y_2,fresh_y_4))),(ipk_3,responder_random_5,mul_point(P,hash((seed_y_2,fresh_y_4))),hash((mul_point(P,hash((seed_x_2,fresh_x_2))),initiator_random_3))),sigma2_info),(mul_point(P,responder_noc_key_5),sign(noc_signing_key,mul_point(P,responder_noc_key_5)),sign(responder_noc_key_5,(mul_point(P,responder_noc_key_5),mul_point(P,hash((seed_y_2,fresh_y_4))),mul_point(P,hash((seed_x_2,fresh_x_2))))),resumption_id_5),ncase_sigma2n,nil))))),sigma3_info),(mul_point(P,initiator_noc_key_3),sign(noc_signing_key,mul_point(P,initiator_noc_key_3)),sign(initiator_noc_key_3,(mul_point(P,initiator_noc_key_3),mul_point(P,hash((seed_x_2,fresh_x_2))),mul_point(P,hash((seed_y_2,fresh_y_4)))))),ncase_sigma3n,nil)))),sekeys_info),q_session_keys_r) at {74} in copy a
 
-new dummy_1: bitstring creating dummy_3 at {76} in copy a
+new dummy_1: bitstring creating dummy_3 at {75} in copy a
 
-event did_not_reach_end_responder(dummy_3) at {77} in copy a
+event did_not_reach_end_responder(dummy_3) at {76} in copy a
 
-out(c, ~M_20) with ~M_20 = seed_x_2 at {80} in copy a_2
+out(c, ~M_20) with ~M_20 = seed_x_2 at {79} in copy a_2
 
-out(c, ~M_21) with ~M_21 = ipk_3 at {86} in copy a_3
+out(c, ~M_21) with ~M_21 = ipk_3 at {85} in copy a_3
 
 The attacker has the message dec(1-proj-3-tuple(aead_dec(kdf(mul_point(~M_4,hash((~M_20,~M_9))),(~M_21,hash(((~M_1,~M_2),(~M_3,~M_4,~M_5)))),sigma3_info),~M_6,ncase_sigma3n,nil)),~M_14) = q_id_i_r in phase 3.
 A trace has been found.
@@ -3065,8 +3063,8 @@ ok, secrecy assumption verified: fact unreachable attacker(q_id_r_r[])
 ok, secrecy assumption verified: fact unreachable attacker(q_eph_x[])
 ok, secrecy assumption verified: fact unreachable attacker_p1(q_eph_y[])
 ok, secrecy assumption verified: fact unreachable attacker(q_eph_y[])
-ok, secrecy assumption verified: fact unreachable attacker(q_session_keys_i[])
-ok, secrecy assumption verified: fact unreachable attacker(q_session_keys_r[])
+ok, secrecy assumption verified: fact unreachable attacker(q_shared_secret_i[])
+ok, secrecy assumption verified: fact unreachable attacker(q_shared_secret_r[])
 ok, secrecy assumption verified: fact unreachable attacker_p2(q_session_keys_i[])
 ok, secrecy assumption verified: fact unreachable attacker_p1(q_session_keys_i[])
 ok, secrecy assumption verified: fact unreachable attacker(q_session_keys_i[])
@@ -3234,7 +3232,7 @@ attacker_p2(responder_random_2).
 So the attacker may know responder_random_2 in phase 3.
 attacker_p3(responder_random_2).
 
-38. The message ipk[] may be sent to the attacker in phase 3 at output {86}.
+38. The message ipk[] may be sent to the attacker in phase 3 at output {85}.
 attacker_p3(ipk[]).
 
 39. By 38, the attacker may know ipk[] in phase 3.
@@ -3804,8 +3802,8 @@ ok, secrecy assumption verified: fact unreachable attacker(q_id_r_r[])
 ok, secrecy assumption verified: fact unreachable attacker(q_eph_x[])
 ok, secrecy assumption verified: fact unreachable attacker_p1(q_eph_y[])
 ok, secrecy assumption verified: fact unreachable attacker(q_eph_y[])
-ok, secrecy assumption verified: fact unreachable attacker(q_session_keys_i[])
-ok, secrecy assumption verified: fact unreachable attacker(q_session_keys_r[])
+ok, secrecy assumption verified: fact unreachable attacker(q_shared_secret_i[])
+ok, secrecy assumption verified: fact unreachable attacker(q_shared_secret_r[])
 ok, secrecy assumption verified: fact unreachable attacker_p2(q_session_keys_i[])
 ok, secrecy assumption verified: fact unreachable attacker_p1(q_session_keys_i[])
 ok, secrecy assumption verified: fact unreachable attacker(q_session_keys_i[])
@@ -3872,7 +3870,7 @@ attacker(aead_enc(kdf(mul_point(mul_point(P,hash((seed_x[],fresh_x_1))),hash((se
 
 11. The message (mul_point(P,hash((seed_x[],fresh_x_1))),initiator_random_3) that the attacker may have by 4 may be received at input {48}.
 The message aead_enc(kdf(mul_point(mul_point(P,hash((seed_x[],fresh_x_1))),hash((seed_y[],fresh_y_2))),(ipk[],hash(((mul_point(P,hash((seed_x[],fresh_x_1))),initiator_random_3),(responder_random_3,mul_point(P,hash((seed_y[],fresh_y_2))),aead_enc(kdf(mul_point(mul_point(P,hash((seed_x[],fresh_x_1))),hash((seed_y[],fresh_y_2))),(ipk[],responder_random_3,mul_point(P,hash((seed_y[],fresh_y_2))),hash((mul_point(P,hash((seed_x[],fresh_x_1))),initiator_random_3))),sigma2_info),(mul_point(P,responder_noc_key_2),sign(noc_signing_key[],mul_point(P,responder_noc_key_2)),sign(responder_noc_key_2,(mul_point(P,responder_noc_key_2),mul_point(P,hash((seed_y[],fresh_y_2))),mul_point(P,hash((seed_x[],fresh_x_1))))),resumption_id_3),ncase_sigma2n,nil))))),sigma3_info),(mul_point(P,initiator_noc_key_2),sign(noc_signing_key[],mul_point(P,initiator_noc_key_2)),sign(initiator_noc_key_2,(mul_point(P,initiator_noc_key_2),mul_point(P,hash((seed_x[],fresh_x_1))),mul_point(P,hash((seed_y[],fresh_y_2)))))),ncase_sigma3n,nil) that the attacker may have by 10 may be received at input {62}.
-So the message enc(mul_point(P,responder_noc_key_2),q_id_r_r[]) may be sent to the attacker at output {71}.
+So the message enc(mul_point(P,responder_noc_key_2),q_id_r_r[]) may be sent to the attacker at output {70}.
 attacker(enc(mul_point(P,responder_noc_key_2),q_id_r_r[])).
 
 12. By 11, the attacker may know enc(mul_point(P,responder_noc_key_2),q_id_r_r[]).
@@ -3975,7 +3973,7 @@ attacker_p2(responder_random_2).
 So the attacker may know responder_random_2 in phase 3.
 attacker_p3(responder_random_2).
 
-38. The message ipk[] may be sent to the attacker in phase 3 at output {86}.
+38. The message ipk[] may be sent to the attacker in phase 3 at output {85}.
 attacker_p3(ipk[]).
 
 39. By 38, the attacker may know ipk[] in phase 3.
@@ -4545,8 +4543,8 @@ ok, secrecy assumption verified: fact unreachable attacker(q_id_r_r[])
 ok, secrecy assumption verified: fact unreachable attacker(q_eph_x[])
 ok, secrecy assumption verified: fact unreachable attacker_p1(q_eph_y[])
 ok, secrecy assumption verified: fact unreachable attacker(q_eph_y[])
-ok, secrecy assumption verified: fact unreachable attacker(q_session_keys_i[])
-ok, secrecy assumption verified: fact unreachable attacker(q_session_keys_r[])
+ok, secrecy assumption verified: fact unreachable attacker(q_shared_secret_i[])
+ok, secrecy assumption verified: fact unreachable attacker(q_shared_secret_r[])
 ok, secrecy assumption verified: fact unreachable attacker_p2(q_session_keys_i[])
 ok, secrecy assumption verified: fact unreachable attacker_p1(q_session_keys_i[])
 ok, secrecy assumption verified: fact unreachable attacker(q_session_keys_i[])
@@ -4653,7 +4651,7 @@ attacker(fresh_x_1).
 So the attacker may know fresh_x_1 in phase 1.
 attacker_p1(fresh_x_1).
 
-21. The message seed_x[] may be sent to the attacker in phase 1 at output {80}.
+21. The message seed_x[] may be sent to the attacker in phase 1 at output {79}.
 attacker_p1(seed_x[]).
 
 22. By 21, the attacker may know seed_x[] in phase 1.
@@ -4746,7 +4744,7 @@ new dummy: bitstring creating dummy_2 at {39} in copy a_1
 
 event did_not_reach_end_initiator(dummy_2) at {40} in copy a_1
 
-out(c, ~M_13) with ~M_13 = seed_x_2 at {80} in copy a_2
+out(c, ~M_13) with ~M_13 = seed_x_2 at {79} in copy a_2
 
 The attacker has the message dec(hash((~M_13,~M_9)),~M_10) = q_eph_x in phase 3.
 A trace has been found.
@@ -5279,8 +5277,8 @@ ok, secrecy assumption verified: fact unreachable attacker(q_id_r_r[])
 ok, secrecy assumption verified: fact unreachable attacker(q_eph_x[])
 ok, secrecy assumption verified: fact unreachable attacker_p1(q_eph_y[])
 ok, secrecy assumption verified: fact unreachable attacker(q_eph_y[])
-ok, secrecy assumption verified: fact unreachable attacker(q_session_keys_i[])
-ok, secrecy assumption verified: fact unreachable attacker(q_session_keys_r[])
+ok, secrecy assumption verified: fact unreachable attacker(q_shared_secret_i[])
+ok, secrecy assumption verified: fact unreachable attacker(q_shared_secret_r[])
 ok, secrecy assumption verified: fact unreachable attacker_p2(q_session_keys_i[])
 ok, secrecy assumption verified: fact unreachable attacker_p1(q_session_keys_i[])
 ok, secrecy assumption verified: fact unreachable attacker(q_session_keys_i[])
@@ -5344,7 +5342,7 @@ attacker(aead_enc(kdf(mul_point(mul_point(P,hash((seed_x[],fresh_x_1))),hash((se
 
 11. The message (mul_point(P,hash((seed_x[],fresh_x_1))),initiator_random_2) that the attacker may have by 4 may be received at input {48}.
 The message aead_enc(kdf(mul_point(mul_point(P,hash((seed_x[],fresh_x_1))),hash((seed_y[],fresh_y_1))),(ipk[],hash(((mul_point(P,hash((seed_x[],fresh_x_1))),initiator_random_2),(responder_random_2,mul_point(P,hash((seed_y[],fresh_y_1))),aead_enc(kdf(mul_point(mul_point(P,hash((seed_x[],fresh_x_1))),hash((seed_y[],fresh_y_1))),(ipk[],responder_random_2,mul_point(P,hash((seed_y[],fresh_y_1))),hash((mul_point(P,hash((seed_x[],fresh_x_1))),initiator_random_2))),sigma2_info),(mul_point(P,responder_noc_key_2),sign(noc_signing_key[],mul_point(P,responder_noc_key_2)),sign(responder_noc_key_2,(mul_point(P,responder_noc_key_2),mul_point(P,hash((seed_y[],fresh_y_1))),mul_point(P,hash((seed_x[],fresh_x_1))))),resumption_id_2),ncase_sigma2n,nil))))),sigma3_info),(mul_point(P,initiator_noc_key_2),sign(noc_signing_key[],mul_point(P,initiator_noc_key_2)),sign(initiator_noc_key_2,(mul_point(P,initiator_noc_key_2),mul_point(P,hash((seed_x[],fresh_x_1))),mul_point(P,hash((seed_y[],fresh_y_1)))))),ncase_sigma3n,nil) that the attacker may have by 10 may be received at input {62}.
-So the message enc(hash((seed_y[],fresh_y_1)),q_eph_y[]) may be sent to the attacker at output {73}.
+So the message enc(hash((seed_y[],fresh_y_1)),q_eph_y[]) may be sent to the attacker at output {72}.
 attacker(enc(hash((seed_y[],fresh_y_1)),q_eph_y[])).
 
 12. By 11, the attacker may know enc(hash((seed_y[],fresh_y_1)),q_eph_y[]).
@@ -5357,7 +5355,7 @@ attacker_p2(enc(hash((seed_y[],fresh_y_1)),q_eph_y[])).
 
 14. The message (mul_point(P,hash((seed_x[],fresh_x_1))),initiator_random_2) that the attacker may have by 4 may be received at input {48}.
 The message aead_enc(kdf(mul_point(mul_point(P,hash((seed_x[],fresh_x_1))),hash((seed_y[],fresh_y_1))),(ipk[],hash(((mul_point(P,hash((seed_x[],fresh_x_1))),initiator_random_2),(responder_random_2,mul_point(P,hash((seed_y[],fresh_y_1))),aead_enc(kdf(mul_point(mul_point(P,hash((seed_x[],fresh_x_1))),hash((seed_y[],fresh_y_1))),(ipk[],responder_random_2,mul_point(P,hash((seed_y[],fresh_y_1))),hash((mul_point(P,hash((seed_x[],fresh_x_1))),initiator_random_2))),sigma2_info),(mul_point(P,responder_noc_key_2),sign(noc_signing_key[],mul_point(P,responder_noc_key_2)),sign(responder_noc_key_2,(mul_point(P,responder_noc_key_2),mul_point(P,hash((seed_y[],fresh_y_1))),mul_point(P,hash((seed_x[],fresh_x_1))))),resumption_id_2),ncase_sigma2n,nil))))),sigma3_info),(mul_point(P,initiator_noc_key_2),sign(noc_signing_key[],mul_point(P,initiator_noc_key_2)),sign(initiator_noc_key_2,(mul_point(P,initiator_noc_key_2),mul_point(P,hash((seed_x[],fresh_x_1))),mul_point(P,hash((seed_y[],fresh_y_1)))))),ncase_sigma3n,nil) that the attacker may have by 10 may be received at input {62}.
-So the message fresh_y_1 may be sent to the attacker at output {72}.
+So the message fresh_y_1 may be sent to the attacker at output {71}.
 attacker(fresh_y_1).
 
 15. By 14, the attacker may know fresh_y_1.
@@ -5368,7 +5366,7 @@ attacker_p1(fresh_y_1).
 So the attacker may know fresh_y_1 in phase 2.
 attacker_p2(fresh_y_1).
 
-17. The message seed_y[] may be sent to the attacker in phase 2 at output {83}.
+17. The message seed_y[] may be sent to the attacker in phase 2 at output {82}.
 attacker_p2(seed_y[]).
 
 18. By 17, the attacker may know seed_y[] in phase 2.
@@ -5455,27 +5453,27 @@ event did_not_reach_end_initiator(dummy_2) at {40} in copy a_1
 
 in(c, ~M_6) with ~M_6 = aead_enc(kdf(mul_point(mul_point(P,hash((seed_x_2,fresh_x_2))),hash((seed_y_2,fresh_y_2))),(ipk_3,hash(((mul_point(P,hash((seed_x_2,fresh_x_2))),initiator_random_3),(responder_random_3,mul_point(P,hash((seed_y_2,fresh_y_2))),aead_enc(kdf(mul_point(mul_point(P,hash((seed_x_2,fresh_x_2))),hash((seed_y_2,fresh_y_2))),(ipk_3,responder_random_3,mul_point(P,hash((seed_y_2,fresh_y_2))),hash((mul_point(P,hash((seed_x_2,fresh_x_2))),initiator_random_3))),sigma2_info),(mul_point(P,responder_noc_key_3),sign(noc_signing_key,mul_point(P,responder_noc_key_3)),sign(responder_noc_key_3,(mul_point(P,responder_noc_key_3),mul_point(P,hash((seed_y_2,fresh_y_2))),mul_point(P,hash((seed_x_2,fresh_x_2))))),resumption_id_3),ncase_sigma2n,nil))))),sigma3_info),(mul_point(P,initiator_noc_key_3),sign(noc_signing_key,mul_point(P,initiator_noc_key_3)),sign(initiator_noc_key_3,(mul_point(P,initiator_noc_key_3),mul_point(P,hash((seed_x_2,fresh_x_2))),mul_point(P,hash((seed_y_2,fresh_y_2)))))),ncase_sigma3n,nil) at {62} in copy a
 
-out(c, ~M_13) with ~M_13 = sigma_finished at {68} in copy a
+out(c, ~M_13) with ~M_13 = sigma_finished at {67} in copy a
 
-event responder_end(mul_point(P,responder_noc_key_3),mul_point(P,hash((seed_y_2,fresh_y_2))),responder_random_3) at {69} in copy a
+event responder_end(mul_point(P,responder_noc_key_3),mul_point(P,hash((seed_y_2,fresh_y_2))),responder_random_3) at {68} in copy a
 
-out(c, ~M_14) with ~M_14 = enc(mul_point(P,initiator_noc_key_3),q_id_i_r) at {70} in copy a
+out(c, ~M_14) with ~M_14 = enc(mul_point(P,initiator_noc_key_3),q_id_i_r) at {69} in copy a
 
-out(c, ~M_15) with ~M_15 = enc(mul_point(P,responder_noc_key_3),q_id_r_r) at {71} in copy a
+out(c, ~M_15) with ~M_15 = enc(mul_point(P,responder_noc_key_3),q_id_r_r) at {70} in copy a
 
-out(c, ~M_16) with ~M_16 = fresh_y_2 at {72} in copy a
+out(c, ~M_16) with ~M_16 = fresh_y_2 at {71} in copy a
 
-out(c, ~M_17) with ~M_17 = enc(hash((seed_y_2,fresh_y_2)),q_eph_y) at {73} in copy a
+out(c, ~M_17) with ~M_17 = enc(hash((seed_y_2,fresh_y_2)),q_eph_y) at {72} in copy a
 
-out(c, ~M_18) with ~M_18 = enc(mul_point(mul_point(P,hash((seed_x_2,fresh_x_2))),hash((seed_y_2,fresh_y_2))),q_shared_secret_r) at {74} in copy a
+out(c, ~M_18) with ~M_18 = enc(mul_point(mul_point(P,hash((seed_x_2,fresh_x_2))),hash((seed_y_2,fresh_y_2))),q_shared_secret_r) at {73} in copy a
 
-out(c, ~M_19) with ~M_19 = enc(kdf(mul_point(mul_point(P,hash((seed_x_2,fresh_x_2))),hash((seed_y_2,fresh_y_2))),(ipk_3,hash(((mul_point(P,hash((seed_x_2,fresh_x_2))),initiator_random_3),(responder_random_3,mul_point(P,hash((seed_y_2,fresh_y_2))),aead_enc(kdf(mul_point(mul_point(P,hash((seed_x_2,fresh_x_2))),hash((seed_y_2,fresh_y_2))),(ipk_3,responder_random_3,mul_point(P,hash((seed_y_2,fresh_y_2))),hash((mul_point(P,hash((seed_x_2,fresh_x_2))),initiator_random_3))),sigma2_info),(mul_point(P,responder_noc_key_3),sign(noc_signing_key,mul_point(P,responder_noc_key_3)),sign(responder_noc_key_3,(mul_point(P,responder_noc_key_3),mul_point(P,hash((seed_y_2,fresh_y_2))),mul_point(P,hash((seed_x_2,fresh_x_2))))),resumption_id_3),ncase_sigma2n,nil)),aead_enc(kdf(mul_point(mul_point(P,hash((seed_x_2,fresh_x_2))),hash((seed_y_2,fresh_y_2))),(ipk_3,hash(((mul_point(P,hash((seed_x_2,fresh_x_2))),initiator_random_3),(responder_random_3,mul_point(P,hash((seed_y_2,fresh_y_2))),aead_enc(kdf(mul_point(mul_point(P,hash((seed_x_2,fresh_x_2))),hash((seed_y_2,fresh_y_2))),(ipk_3,responder_random_3,mul_point(P,hash((seed_y_2,fresh_y_2))),hash((mul_point(P,hash((seed_x_2,fresh_x_2))),initiator_random_3))),sigma2_info),(mul_point(P,responder_noc_key_3),sign(noc_signing_key,mul_point(P,responder_noc_key_3)),sign(responder_noc_key_3,(mul_point(P,responder_noc_key_3),mul_point(P,hash((seed_y_2,fresh_y_2))),mul_point(P,hash((seed_x_2,fresh_x_2))))),resumption_id_3),ncase_sigma2n,nil))))),sigma3_info),(mul_point(P,initiator_noc_key_3),sign(noc_signing_key,mul_point(P,initiator_noc_key_3)),sign(initiator_noc_key_3,(mul_point(P,initiator_noc_key_3),mul_point(P,hash((seed_x_2,fresh_x_2))),mul_point(P,hash((seed_y_2,fresh_y_2)))))),ncase_sigma3n,nil)))),sekeys_info),q_session_keys_r) at {75} in copy a
+out(c, ~M_19) with ~M_19 = enc(kdf(mul_point(mul_point(P,hash((seed_x_2,fresh_x_2))),hash((seed_y_2,fresh_y_2))),(ipk_3,hash(((mul_point(P,hash((seed_x_2,fresh_x_2))),initiator_random_3),(responder_random_3,mul_point(P,hash((seed_y_2,fresh_y_2))),aead_enc(kdf(mul_point(mul_point(P,hash((seed_x_2,fresh_x_2))),hash((seed_y_2,fresh_y_2))),(ipk_3,responder_random_3,mul_point(P,hash((seed_y_2,fresh_y_2))),hash((mul_point(P,hash((seed_x_2,fresh_x_2))),initiator_random_3))),sigma2_info),(mul_point(P,responder_noc_key_3),sign(noc_signing_key,mul_point(P,responder_noc_key_3)),sign(responder_noc_key_3,(mul_point(P,responder_noc_key_3),mul_point(P,hash((seed_y_2,fresh_y_2))),mul_point(P,hash((seed_x_2,fresh_x_2))))),resumption_id_3),ncase_sigma2n,nil)),aead_enc(kdf(mul_point(mul_point(P,hash((seed_x_2,fresh_x_2))),hash((seed_y_2,fresh_y_2))),(ipk_3,hash(((mul_point(P,hash((seed_x_2,fresh_x_2))),initiator_random_3),(responder_random_3,mul_point(P,hash((seed_y_2,fresh_y_2))),aead_enc(kdf(mul_point(mul_point(P,hash((seed_x_2,fresh_x_2))),hash((seed_y_2,fresh_y_2))),(ipk_3,responder_random_3,mul_point(P,hash((seed_y_2,fresh_y_2))),hash((mul_point(P,hash((seed_x_2,fresh_x_2))),initiator_random_3))),sigma2_info),(mul_point(P,responder_noc_key_3),sign(noc_signing_key,mul_point(P,responder_noc_key_3)),sign(responder_noc_key_3,(mul_point(P,responder_noc_key_3),mul_point(P,hash((seed_y_2,fresh_y_2))),mul_point(P,hash((seed_x_2,fresh_x_2))))),resumption_id_3),ncase_sigma2n,nil))))),sigma3_info),(mul_point(P,initiator_noc_key_3),sign(noc_signing_key,mul_point(P,initiator_noc_key_3)),sign(initiator_noc_key_3,(mul_point(P,initiator_noc_key_3),mul_point(P,hash((seed_x_2,fresh_x_2))),mul_point(P,hash((seed_y_2,fresh_y_2)))))),ncase_sigma3n,nil)))),sekeys_info),q_session_keys_r) at {74} in copy a
 
-new dummy_1: bitstring creating dummy_3 at {76} in copy a
+new dummy_1: bitstring creating dummy_3 at {75} in copy a
 
-event did_not_reach_end_responder(dummy_3) at {77} in copy a
+event did_not_reach_end_responder(dummy_3) at {76} in copy a
 
-out(c, ~M_20) with ~M_20 = seed_y_2 at {83} in copy a_2
+out(c, ~M_20) with ~M_20 = seed_y_2 at {82} in copy a_2
 
 The attacker has the message dec(hash((~M_20,~M_16)),~M_17) = q_eph_y in phase 3.
 A trace has been found.
@@ -6008,8 +6006,8 @@ ok, secrecy assumption verified: fact unreachable attacker(q_id_r_r[])
 ok, secrecy assumption verified: fact unreachable attacker(q_eph_x[])
 ok, secrecy assumption verified: fact unreachable attacker_p1(q_eph_y[])
 ok, secrecy assumption verified: fact unreachable attacker(q_eph_y[])
-ok, secrecy assumption verified: fact unreachable attacker(q_session_keys_i[])
-ok, secrecy assumption verified: fact unreachable attacker(q_session_keys_r[])
+ok, secrecy assumption verified: fact unreachable attacker(q_shared_secret_i[])
+ok, secrecy assumption verified: fact unreachable attacker(q_shared_secret_r[])
 ok, secrecy assumption verified: fact unreachable attacker_p2(q_session_keys_i[])
 ok, secrecy assumption verified: fact unreachable attacker_p1(q_session_keys_i[])
 ok, secrecy assumption verified: fact unreachable attacker(q_session_keys_i[])
@@ -6089,7 +6087,7 @@ attacker(aead_enc(kdf(mul_point(mul_point(P,hash((seed_x[],fresh_x_1))),hash((se
 
 15. The message (mul_point(P,hash((seed_x[],fresh_x_1))),initiator_random_2) that the attacker may have by 4 may be received at input {48}.
 The message aead_enc(kdf(mul_point(mul_point(P,hash((seed_x[],fresh_x_1))),hash((seed_y[],fresh_y_1))),(ipk[],hash(((mul_point(P,hash((seed_x[],fresh_x_1))),initiator_random_2),(responder_random_2,mul_point(P,hash((seed_y[],fresh_y_1))),aead_enc(kdf(mul_point(mul_point(P,hash((seed_x[],fresh_x_1))),hash((seed_y[],fresh_y_1))),(ipk[],responder_random_2,mul_point(P,hash((seed_y[],fresh_y_1))),hash((mul_point(P,hash((seed_x[],fresh_x_1))),initiator_random_2))),sigma2_info),(mul_point(P,responder_noc_key_2),sign(noc_signing_key[],mul_point(P,responder_noc_key_2)),sign(responder_noc_key_2,(mul_point(P,responder_noc_key_2),mul_point(P,hash((seed_y[],fresh_y_1))),mul_point(P,hash((seed_x[],fresh_x_1))))),resumption_id_2),ncase_sigma2n,nil))))),sigma3_info),(mul_point(P,initiator_noc_key_2),sign(noc_signing_key[],mul_point(P,initiator_noc_key_2)),sign(initiator_noc_key_2,(mul_point(P,initiator_noc_key_2),mul_point(P,hash((seed_x[],fresh_x_1))),mul_point(P,hash((seed_y[],fresh_y_1)))))),ncase_sigma3n,nil) that the attacker may have by 14 may be received at input {62}.
-So the message fresh_y_1 may be sent to the attacker at output {72}.
+So the message fresh_y_1 may be sent to the attacker at output {71}.
 attacker(fresh_y_1).
 
 16. By 15, the attacker may know fresh_y_1.
@@ -6100,7 +6098,7 @@ attacker_p1(fresh_y_1).
 So the attacker may know fresh_y_1 in phase 2.
 attacker_p2(fresh_y_1).
 
-18. The message seed_y[] may be sent to the attacker in phase 2 at output {83}.
+18. The message seed_y[] may be sent to the attacker in phase 2 at output {82}.
 attacker_p2(seed_y[]).
 
 19. By 18, the attacker may know seed_y[] in phase 2.
@@ -6200,27 +6198,27 @@ event did_not_reach_end_initiator(dummy_2) at {40} in copy a_1
 
 in(c, ~M_6) with ~M_6 = aead_enc(kdf(mul_point(mul_point(P,hash((seed_x_2,fresh_x_2))),hash((seed_y_2,fresh_y_2))),(ipk_3,hash(((mul_point(P,hash((seed_x_2,fresh_x_2))),initiator_random_3),(responder_random_3,mul_point(P,hash((seed_y_2,fresh_y_2))),aead_enc(kdf(mul_point(mul_point(P,hash((seed_x_2,fresh_x_2))),hash((seed_y_2,fresh_y_2))),(ipk_3,responder_random_3,mul_point(P,hash((seed_y_2,fresh_y_2))),hash((mul_point(P,hash((seed_x_2,fresh_x_2))),initiator_random_3))),sigma2_info),(mul_point(P,responder_noc_key_3),sign(noc_signing_key,mul_point(P,responder_noc_key_3)),sign(responder_noc_key_3,(mul_point(P,responder_noc_key_3),mul_point(P,hash((seed_y_2,fresh_y_2))),mul_point(P,hash((seed_x_2,fresh_x_2))))),resumption_id_3),ncase_sigma2n,nil))))),sigma3_info),(mul_point(P,initiator_noc_key_3),sign(noc_signing_key,mul_point(P,initiator_noc_key_3)),sign(initiator_noc_key_3,(mul_point(P,initiator_noc_key_3),mul_point(P,hash((seed_x_2,fresh_x_2))),mul_point(P,hash((seed_y_2,fresh_y_2)))))),ncase_sigma3n,nil) at {62} in copy a
 
-out(c, ~M_13) with ~M_13 = sigma_finished at {68} in copy a
+out(c, ~M_13) with ~M_13 = sigma_finished at {67} in copy a
 
-event responder_end(mul_point(P,responder_noc_key_3),mul_point(P,hash((seed_y_2,fresh_y_2))),responder_random_3) at {69} in copy a
+event responder_end(mul_point(P,responder_noc_key_3),mul_point(P,hash((seed_y_2,fresh_y_2))),responder_random_3) at {68} in copy a
 
-out(c, ~M_14) with ~M_14 = enc(mul_point(P,initiator_noc_key_3),q_id_i_r) at {70} in copy a
+out(c, ~M_14) with ~M_14 = enc(mul_point(P,initiator_noc_key_3),q_id_i_r) at {69} in copy a
 
-out(c, ~M_15) with ~M_15 = enc(mul_point(P,responder_noc_key_3),q_id_r_r) at {71} in copy a
+out(c, ~M_15) with ~M_15 = enc(mul_point(P,responder_noc_key_3),q_id_r_r) at {70} in copy a
 
-out(c, ~M_16) with ~M_16 = fresh_y_2 at {72} in copy a
+out(c, ~M_16) with ~M_16 = fresh_y_2 at {71} in copy a
 
-out(c, ~M_17) with ~M_17 = enc(hash((seed_y_2,fresh_y_2)),q_eph_y) at {73} in copy a
+out(c, ~M_17) with ~M_17 = enc(hash((seed_y_2,fresh_y_2)),q_eph_y) at {72} in copy a
 
-out(c, ~M_18) with ~M_18 = enc(mul_point(mul_point(P,hash((seed_x_2,fresh_x_2))),hash((seed_y_2,fresh_y_2))),q_shared_secret_r) at {74} in copy a
+out(c, ~M_18) with ~M_18 = enc(mul_point(mul_point(P,hash((seed_x_2,fresh_x_2))),hash((seed_y_2,fresh_y_2))),q_shared_secret_r) at {73} in copy a
 
-out(c, ~M_19) with ~M_19 = enc(kdf(mul_point(mul_point(P,hash((seed_x_2,fresh_x_2))),hash((seed_y_2,fresh_y_2))),(ipk_3,hash(((mul_point(P,hash((seed_x_2,fresh_x_2))),initiator_random_3),(responder_random_3,mul_point(P,hash((seed_y_2,fresh_y_2))),aead_enc(kdf(mul_point(mul_point(P,hash((seed_x_2,fresh_x_2))),hash((seed_y_2,fresh_y_2))),(ipk_3,responder_random_3,mul_point(P,hash((seed_y_2,fresh_y_2))),hash((mul_point(P,hash((seed_x_2,fresh_x_2))),initiator_random_3))),sigma2_info),(mul_point(P,responder_noc_key_3),sign(noc_signing_key,mul_point(P,responder_noc_key_3)),sign(responder_noc_key_3,(mul_point(P,responder_noc_key_3),mul_point(P,hash((seed_y_2,fresh_y_2))),mul_point(P,hash((seed_x_2,fresh_x_2))))),resumption_id_3),ncase_sigma2n,nil)),aead_enc(kdf(mul_point(mul_point(P,hash((seed_x_2,fresh_x_2))),hash((seed_y_2,fresh_y_2))),(ipk_3,hash(((mul_point(P,hash((seed_x_2,fresh_x_2))),initiator_random_3),(responder_random_3,mul_point(P,hash((seed_y_2,fresh_y_2))),aead_enc(kdf(mul_point(mul_point(P,hash((seed_x_2,fresh_x_2))),hash((seed_y_2,fresh_y_2))),(ipk_3,responder_random_3,mul_point(P,hash((seed_y_2,fresh_y_2))),hash((mul_point(P,hash((seed_x_2,fresh_x_2))),initiator_random_3))),sigma2_info),(mul_point(P,responder_noc_key_3),sign(noc_signing_key,mul_point(P,responder_noc_key_3)),sign(responder_noc_key_3,(mul_point(P,responder_noc_key_3),mul_point(P,hash((seed_y_2,fresh_y_2))),mul_point(P,hash((seed_x_2,fresh_x_2))))),resumption_id_3),ncase_sigma2n,nil))))),sigma3_info),(mul_point(P,initiator_noc_key_3),sign(noc_signing_key,mul_point(P,initiator_noc_key_3)),sign(initiator_noc_key_3,(mul_point(P,initiator_noc_key_3),mul_point(P,hash((seed_x_2,fresh_x_2))),mul_point(P,hash((seed_y_2,fresh_y_2)))))),ncase_sigma3n,nil)))),sekeys_info),q_session_keys_r) at {75} in copy a
+out(c, ~M_19) with ~M_19 = enc(kdf(mul_point(mul_point(P,hash((seed_x_2,fresh_x_2))),hash((seed_y_2,fresh_y_2))),(ipk_3,hash(((mul_point(P,hash((seed_x_2,fresh_x_2))),initiator_random_3),(responder_random_3,mul_point(P,hash((seed_y_2,fresh_y_2))),aead_enc(kdf(mul_point(mul_point(P,hash((seed_x_2,fresh_x_2))),hash((seed_y_2,fresh_y_2))),(ipk_3,responder_random_3,mul_point(P,hash((seed_y_2,fresh_y_2))),hash((mul_point(P,hash((seed_x_2,fresh_x_2))),initiator_random_3))),sigma2_info),(mul_point(P,responder_noc_key_3),sign(noc_signing_key,mul_point(P,responder_noc_key_3)),sign(responder_noc_key_3,(mul_point(P,responder_noc_key_3),mul_point(P,hash((seed_y_2,fresh_y_2))),mul_point(P,hash((seed_x_2,fresh_x_2))))),resumption_id_3),ncase_sigma2n,nil)),aead_enc(kdf(mul_point(mul_point(P,hash((seed_x_2,fresh_x_2))),hash((seed_y_2,fresh_y_2))),(ipk_3,hash(((mul_point(P,hash((seed_x_2,fresh_x_2))),initiator_random_3),(responder_random_3,mul_point(P,hash((seed_y_2,fresh_y_2))),aead_enc(kdf(mul_point(mul_point(P,hash((seed_x_2,fresh_x_2))),hash((seed_y_2,fresh_y_2))),(ipk_3,responder_random_3,mul_point(P,hash((seed_y_2,fresh_y_2))),hash((mul_point(P,hash((seed_x_2,fresh_x_2))),initiator_random_3))),sigma2_info),(mul_point(P,responder_noc_key_3),sign(noc_signing_key,mul_point(P,responder_noc_key_3)),sign(responder_noc_key_3,(mul_point(P,responder_noc_key_3),mul_point(P,hash((seed_y_2,fresh_y_2))),mul_point(P,hash((seed_x_2,fresh_x_2))))),resumption_id_3),ncase_sigma2n,nil))))),sigma3_info),(mul_point(P,initiator_noc_key_3),sign(noc_signing_key,mul_point(P,initiator_noc_key_3)),sign(initiator_noc_key_3,(mul_point(P,initiator_noc_key_3),mul_point(P,hash((seed_x_2,fresh_x_2))),mul_point(P,hash((seed_y_2,fresh_y_2)))))),ncase_sigma3n,nil)))),sekeys_info),q_session_keys_r) at {74} in copy a
 
-new dummy_1: bitstring creating dummy_3 at {76} in copy a
+new dummy_1: bitstring creating dummy_3 at {75} in copy a
 
-event did_not_reach_end_responder(dummy_3) at {77} in copy a
+event did_not_reach_end_responder(dummy_3) at {76} in copy a
 
-out(c, ~M_20) with ~M_20 = seed_y_2 at {83} in copy a_2
+out(c, ~M_20) with ~M_20 = seed_y_2 at {82} in copy a_2
 
 The attacker has the message dec(mul_point(~M_1,hash((~M_20,~M_16))),~M_11) = q_shared_secret_i in phase 3.
 A trace has been found.
@@ -6753,8 +6751,8 @@ ok, secrecy assumption verified: fact unreachable attacker(q_id_r_r[])
 ok, secrecy assumption verified: fact unreachable attacker(q_eph_x[])
 ok, secrecy assumption verified: fact unreachable attacker_p1(q_eph_y[])
 ok, secrecy assumption verified: fact unreachable attacker(q_eph_y[])
-ok, secrecy assumption verified: fact unreachable attacker(q_session_keys_i[])
-ok, secrecy assumption verified: fact unreachable attacker(q_session_keys_r[])
+ok, secrecy assumption verified: fact unreachable attacker(q_shared_secret_i[])
+ok, secrecy assumption verified: fact unreachable attacker(q_shared_secret_r[])
 ok, secrecy assumption verified: fact unreachable attacker_p2(q_session_keys_i[])
 ok, secrecy assumption verified: fact unreachable attacker_p1(q_session_keys_i[])
 ok, secrecy assumption verified: fact unreachable attacker(q_session_keys_i[])
@@ -6822,7 +6820,7 @@ attacker(aead_enc(kdf(mul_point(mul_point(P,hash((seed_y[],fresh_y_1))),hash((se
 
 12. The message (mul_point(P,hash((seed_x[],fresh_x_1))),initiator_random_2) that the attacker may have by 4 may be received at input {48}.
 The message aead_enc(kdf(mul_point(mul_point(P,hash((seed_y[],fresh_y_1))),hash((seed_x[],fresh_x_1))),(ipk[],hash(((mul_point(P,hash((seed_x[],fresh_x_1))),initiator_random_2),(responder_random_2,mul_point(P,hash((seed_y[],fresh_y_1))),aead_enc(kdf(mul_point(mul_point(P,hash((seed_y[],fresh_y_1))),hash((seed_x[],fresh_x_1))),(ipk[],responder_random_2,mul_point(P,hash((seed_y[],fresh_y_1))),hash((mul_point(P,hash((seed_x[],fresh_x_1))),initiator_random_2))),sigma2_info),(mul_point(P,responder_noc_key_2),sign(noc_signing_key[],mul_point(P,responder_noc_key_2)),sign(responder_noc_key_2,(mul_point(P,responder_noc_key_2),mul_point(P,hash((seed_y[],fresh_y_1))),mul_point(P,hash((seed_x[],fresh_x_1))))),resumption_id_2),ncase_sigma2n,nil))))),sigma3_info),(mul_point(P,initiator_noc_key_2),sign(noc_signing_key[],mul_point(P,initiator_noc_key_2)),sign(initiator_noc_key_2,(mul_point(P,initiator_noc_key_2),mul_point(P,hash((seed_x[],fresh_x_1))),mul_point(P,hash((seed_y[],fresh_y_1)))))),ncase_sigma3n,nil) that the attacker may have by 11 may be received at input {62}.
-So the message enc(mul_point(mul_point(P,hash((seed_y[],fresh_y_1))),hash((seed_x[],fresh_x_1))),q_shared_secret_r[]) may be sent to the attacker at output {74}.
+So the message enc(mul_point(mul_point(P,hash((seed_y[],fresh_y_1))),hash((seed_x[],fresh_x_1))),q_shared_secret_r[]) may be sent to the attacker at output {73}.
 attacker(enc(mul_point(mul_point(P,hash((seed_y[],fresh_y_1))),hash((seed_x[],fresh_x_1))),q_shared_secret_r[])).
 
 13. By 12, the attacker may know enc(mul_point(mul_point(P,hash((seed_y[],fresh_y_1))),hash((seed_x[],fresh_x_1))),q_shared_secret_r[]).
@@ -6839,7 +6837,7 @@ attacker(aead_enc(kdf(mul_point(mul_point(P,hash((seed_x[],fresh_x_1))),hash((se
 
 16. The message (mul_point(P,hash((seed_x[],fresh_x_1))),initiator_random_2) that the attacker may have by 4 may be received at input {48}.
 The message aead_enc(kdf(mul_point(mul_point(P,hash((seed_x[],fresh_x_1))),hash((seed_y[],fresh_y_1))),(ipk[],hash(((mul_point(P,hash((seed_x[],fresh_x_1))),initiator_random_2),(responder_random_2,mul_point(P,hash((seed_y[],fresh_y_1))),aead_enc(kdf(mul_point(mul_point(P,hash((seed_x[],fresh_x_1))),hash((seed_y[],fresh_y_1))),(ipk[],responder_random_2,mul_point(P,hash((seed_y[],fresh_y_1))),hash((mul_point(P,hash((seed_x[],fresh_x_1))),initiator_random_2))),sigma2_info),(mul_point(P,responder_noc_key_2),sign(noc_signing_key[],mul_point(P,responder_noc_key_2)),sign(responder_noc_key_2,(mul_point(P,responder_noc_key_2),mul_point(P,hash((seed_y[],fresh_y_1))),mul_point(P,hash((seed_x[],fresh_x_1))))),resumption_id_2),ncase_sigma2n,nil))))),sigma3_info),(mul_point(P,initiator_noc_key_2),sign(noc_signing_key[],mul_point(P,initiator_noc_key_2)),sign(initiator_noc_key_2,(mul_point(P,initiator_noc_key_2),mul_point(P,hash((seed_x[],fresh_x_1))),mul_point(P,hash((seed_y[],fresh_y_1)))))),ncase_sigma3n,nil) that the attacker may have by 15 may be received at input {62}.
-So the message fresh_y_1 may be sent to the attacker at output {72}.
+So the message fresh_y_1 may be sent to the attacker at output {71}.
 attacker(fresh_y_1).
 
 17. By 16, the attacker may know fresh_y_1.
@@ -6850,7 +6848,7 @@ attacker_p1(fresh_y_1).
 So the attacker may know fresh_y_1 in phase 2.
 attacker_p2(fresh_y_1).
 
-19. The message seed_y[] may be sent to the attacker in phase 2 at output {83}.
+19. The message seed_y[] may be sent to the attacker in phase 2 at output {82}.
 attacker_p2(seed_y[]).
 
 20. By 19, the attacker may know seed_y[] in phase 2.
@@ -6950,27 +6948,27 @@ event did_not_reach_end_initiator(dummy_2) at {40} in copy a_1
 
 in(c, ~M_6) with ~M_6 = aead_enc(kdf(mul_point(mul_point(P,hash((seed_y_2,fresh_y_2))),hash((seed_x_2,fresh_x_2))),(ipk_3,hash(((mul_point(P,hash((seed_x_2,fresh_x_2))),initiator_random_3),(responder_random_3,mul_point(P,hash((seed_y_2,fresh_y_2))),aead_enc(kdf(mul_point(mul_point(P,hash((seed_y_2,fresh_y_2))),hash((seed_x_2,fresh_x_2))),(ipk_3,responder_random_3,mul_point(P,hash((seed_y_2,fresh_y_2))),hash((mul_point(P,hash((seed_x_2,fresh_x_2))),initiator_random_3))),sigma2_info),(mul_point(P,responder_noc_key_3),sign(noc_signing_key,mul_point(P,responder_noc_key_3)),sign(responder_noc_key_3,(mul_point(P,responder_noc_key_3),mul_point(P,hash((seed_y_2,fresh_y_2))),mul_point(P,hash((seed_x_2,fresh_x_2))))),resumption_id_3),ncase_sigma2n,nil))))),sigma3_info),(mul_point(P,initiator_noc_key_3),sign(noc_signing_key,mul_point(P,initiator_noc_key_3)),sign(initiator_noc_key_3,(mul_point(P,initiator_noc_key_3),mul_point(P,hash((seed_x_2,fresh_x_2))),mul_point(P,hash((seed_y_2,fresh_y_2)))))),ncase_sigma3n,nil) at {62} in copy a
 
-out(c, ~M_13) with ~M_13 = sigma_finished at {68} in copy a
+out(c, ~M_13) with ~M_13 = sigma_finished at {67} in copy a
 
-event responder_end(mul_point(P,responder_noc_key_3),mul_point(P,hash((seed_y_2,fresh_y_2))),responder_random_3) at {69} in copy a
+event responder_end(mul_point(P,responder_noc_key_3),mul_point(P,hash((seed_y_2,fresh_y_2))),responder_random_3) at {68} in copy a
 
-out(c, ~M_14) with ~M_14 = enc(mul_point(P,initiator_noc_key_3),q_id_i_r) at {70} in copy a
+out(c, ~M_14) with ~M_14 = enc(mul_point(P,initiator_noc_key_3),q_id_i_r) at {69} in copy a
 
-out(c, ~M_15) with ~M_15 = enc(mul_point(P,responder_noc_key_3),q_id_r_r) at {71} in copy a
+out(c, ~M_15) with ~M_15 = enc(mul_point(P,responder_noc_key_3),q_id_r_r) at {70} in copy a
 
-out(c, ~M_16) with ~M_16 = fresh_y_2 at {72} in copy a
+out(c, ~M_16) with ~M_16 = fresh_y_2 at {71} in copy a
 
-out(c, ~M_17) with ~M_17 = enc(hash((seed_y_2,fresh_y_2)),q_eph_y) at {73} in copy a
+out(c, ~M_17) with ~M_17 = enc(hash((seed_y_2,fresh_y_2)),q_eph_y) at {72} in copy a
 
-out(c, ~M_18) with ~M_18 = enc(mul_point(mul_point(P,hash((seed_x_2,fresh_x_2))),hash((seed_y_2,fresh_y_2))),q_shared_secret_r) at {74} in copy a
+out(c, ~M_18) with ~M_18 = enc(mul_point(mul_point(P,hash((seed_x_2,fresh_x_2))),hash((seed_y_2,fresh_y_2))),q_shared_secret_r) at {73} in copy a
 
-out(c, ~M_19) with ~M_19 = enc(kdf(mul_point(mul_point(P,hash((seed_x_2,fresh_x_2))),hash((seed_y_2,fresh_y_2))),(ipk_3,hash(((mul_point(P,hash((seed_x_2,fresh_x_2))),initiator_random_3),(responder_random_3,mul_point(P,hash((seed_y_2,fresh_y_2))),aead_enc(kdf(mul_point(mul_point(P,hash((seed_x_2,fresh_x_2))),hash((seed_y_2,fresh_y_2))),(ipk_3,responder_random_3,mul_point(P,hash((seed_y_2,fresh_y_2))),hash((mul_point(P,hash((seed_x_2,fresh_x_2))),initiator_random_3))),sigma2_info),(mul_point(P,responder_noc_key_3),sign(noc_signing_key,mul_point(P,responder_noc_key_3)),sign(responder_noc_key_3,(mul_point(P,responder_noc_key_3),mul_point(P,hash((seed_y_2,fresh_y_2))),mul_point(P,hash((seed_x_2,fresh_x_2))))),resumption_id_3),ncase_sigma2n,nil)),aead_enc(kdf(mul_point(mul_point(P,hash((seed_y_2,fresh_y_2))),hash((seed_x_2,fresh_x_2))),(ipk_3,hash(((mul_point(P,hash((seed_x_2,fresh_x_2))),initiator_random_3),(responder_random_3,mul_point(P,hash((seed_y_2,fresh_y_2))),aead_enc(kdf(mul_point(mul_point(P,hash((seed_y_2,fresh_y_2))),hash((seed_x_2,fresh_x_2))),(ipk_3,responder_random_3,mul_point(P,hash((seed_y_2,fresh_y_2))),hash((mul_point(P,hash((seed_x_2,fresh_x_2))),initiator_random_3))),sigma2_info),(mul_point(P,responder_noc_key_3),sign(noc_signing_key,mul_point(P,responder_noc_key_3)),sign(responder_noc_key_3,(mul_point(P,responder_noc_key_3),mul_point(P,hash((seed_y_2,fresh_y_2))),mul_point(P,hash((seed_x_2,fresh_x_2))))),resumption_id_3),ncase_sigma2n,nil))))),sigma3_info),(mul_point(P,initiator_noc_key_3),sign(noc_signing_key,mul_point(P,initiator_noc_key_3)),sign(initiator_noc_key_3,(mul_point(P,initiator_noc_key_3),mul_point(P,hash((seed_x_2,fresh_x_2))),mul_point(P,hash((seed_y_2,fresh_y_2)))))),ncase_sigma3n,nil)))),sekeys_info),q_session_keys_r) at {75} in copy a
+out(c, ~M_19) with ~M_19 = enc(kdf(mul_point(mul_point(P,hash((seed_x_2,fresh_x_2))),hash((seed_y_2,fresh_y_2))),(ipk_3,hash(((mul_point(P,hash((seed_x_2,fresh_x_2))),initiator_random_3),(responder_random_3,mul_point(P,hash((seed_y_2,fresh_y_2))),aead_enc(kdf(mul_point(mul_point(P,hash((seed_x_2,fresh_x_2))),hash((seed_y_2,fresh_y_2))),(ipk_3,responder_random_3,mul_point(P,hash((seed_y_2,fresh_y_2))),hash((mul_point(P,hash((seed_x_2,fresh_x_2))),initiator_random_3))),sigma2_info),(mul_point(P,responder_noc_key_3),sign(noc_signing_key,mul_point(P,responder_noc_key_3)),sign(responder_noc_key_3,(mul_point(P,responder_noc_key_3),mul_point(P,hash((seed_y_2,fresh_y_2))),mul_point(P,hash((seed_x_2,fresh_x_2))))),resumption_id_3),ncase_sigma2n,nil)),aead_enc(kdf(mul_point(mul_point(P,hash((seed_y_2,fresh_y_2))),hash((seed_x_2,fresh_x_2))),(ipk_3,hash(((mul_point(P,hash((seed_x_2,fresh_x_2))),initiator_random_3),(responder_random_3,mul_point(P,hash((seed_y_2,fresh_y_2))),aead_enc(kdf(mul_point(mul_point(P,hash((seed_y_2,fresh_y_2))),hash((seed_x_2,fresh_x_2))),(ipk_3,responder_random_3,mul_point(P,hash((seed_y_2,fresh_y_2))),hash((mul_point(P,hash((seed_x_2,fresh_x_2))),initiator_random_3))),sigma2_info),(mul_point(P,responder_noc_key_3),sign(noc_signing_key,mul_point(P,responder_noc_key_3)),sign(responder_noc_key_3,(mul_point(P,responder_noc_key_3),mul_point(P,hash((seed_y_2,fresh_y_2))),mul_point(P,hash((seed_x_2,fresh_x_2))))),resumption_id_3),ncase_sigma2n,nil))))),sigma3_info),(mul_point(P,initiator_noc_key_3),sign(noc_signing_key,mul_point(P,initiator_noc_key_3)),sign(initiator_noc_key_3,(mul_point(P,initiator_noc_key_3),mul_point(P,hash((seed_x_2,fresh_x_2))),mul_point(P,hash((seed_y_2,fresh_y_2)))))),ncase_sigma3n,nil)))),sekeys_info),q_session_keys_r) at {74} in copy a
 
-new dummy_1: bitstring creating dummy_3 at {76} in copy a
+new dummy_1: bitstring creating dummy_3 at {75} in copy a
 
-event did_not_reach_end_responder(dummy_3) at {77} in copy a
+event did_not_reach_end_responder(dummy_3) at {76} in copy a
 
-out(c, ~M_20) with ~M_20 = seed_y_2 at {83} in copy a_2
+out(c, ~M_20) with ~M_20 = seed_y_2 at {82} in copy a_2
 
 The attacker has the message dec(mul_point(~M_1,hash((~M_20,~M_16))),~M_18) = q_shared_secret_r in phase 3.
 A trace has been found.
@@ -7503,8 +7501,8 @@ ok, secrecy assumption verified: fact unreachable attacker(q_id_r_r[])
 ok, secrecy assumption verified: fact unreachable attacker(q_eph_x[])
 ok, secrecy assumption verified: fact unreachable attacker_p1(q_eph_y[])
 ok, secrecy assumption verified: fact unreachable attacker(q_eph_y[])
-ok, secrecy assumption verified: fact unreachable attacker(q_session_keys_i[])
-ok, secrecy assumption verified: fact unreachable attacker(q_session_keys_r[])
+ok, secrecy assumption verified: fact unreachable attacker(q_shared_secret_i[])
+ok, secrecy assumption verified: fact unreachable attacker(q_shared_secret_r[])
 ok, secrecy assumption verified: fact unreachable attacker_p2(q_session_keys_i[])
 ok, secrecy assumption verified: fact unreachable attacker_p1(q_session_keys_i[])
 ok, secrecy assumption verified: fact unreachable attacker(q_session_keys_i[])
@@ -7611,7 +7609,7 @@ attacker_p2(hash(((mul_point(P,hash((seed_x[],fresh_x_1))),initiator_random_2),(
 So the attacker may know hash(((mul_point(P,hash((seed_x[],fresh_x_1))),initiator_random_2),(responder_random_2,mul_point(P,hash((seed_y[],fresh_y_1))),aead_enc(kdf(mul_point(mul_point(P,hash((seed_x[],fresh_x_1))),hash((seed_y[],fresh_y_1))),(ipk[],responder_random_2,mul_point(P,hash((seed_y[],fresh_y_1))),hash((mul_point(P,hash((seed_x[],fresh_x_1))),initiator_random_2))),sigma2_info),(mul_point(P,responder_noc_key_2),sign(noc_signing_key[],mul_point(P,responder_noc_key_2)),sign(responder_noc_key_2,(mul_point(P,responder_noc_key_2),mul_point(P,hash((seed_y[],fresh_y_1))),mul_point(P,hash((seed_x[],fresh_x_1))))),resumption_id_2),ncase_sigma2n,nil)),aead_enc(kdf(mul_point(mul_point(P,hash((seed_x[],fresh_x_1))),hash((seed_y[],fresh_y_1))),(ipk[],hash(((mul_point(P,hash((seed_x[],fresh_x_1))),initiator_random_2),(responder_random_2,mul_point(P,hash((seed_y[],fresh_y_1))),aead_enc(kdf(mul_point(mul_point(P,hash((seed_x[],fresh_x_1))),hash((seed_y[],fresh_y_1))),(ipk[],responder_random_2,mul_point(P,hash((seed_y[],fresh_y_1))),hash((mul_point(P,hash((seed_x[],fresh_x_1))),initiator_random_2))),sigma2_info),(mul_point(P,responder_noc_key_2),sign(noc_signing_key[],mul_point(P,responder_noc_key_2)),sign(responder_noc_key_2,(mul_point(P,responder_noc_key_2),mul_point(P,hash((seed_y[],fresh_y_1))),mul_point(P,hash((seed_x[],fresh_x_1))))),resumption_id_2),ncase_sigma2n,nil))))),sigma3_info),(mul_point(P,initiator_noc_key_2),sign(noc_signing_key[],mul_point(P,initiator_noc_key_2)),sign(initiator_noc_key_2,(mul_point(P,initiator_noc_key_2),mul_point(P,hash((seed_x[],fresh_x_1))),mul_point(P,hash((seed_y[],fresh_y_1)))))),ncase_sigma3n,nil))) in phase 3.
 attacker_p3(hash(((mul_point(P,hash((seed_x[],fresh_x_1))),initiator_random_2),(responder_random_2,mul_point(P,hash((seed_y[],fresh_y_1))),aead_enc(kdf(mul_point(mul_point(P,hash((seed_x[],fresh_x_1))),hash((seed_y[],fresh_y_1))),(ipk[],responder_random_2,mul_point(P,hash((seed_y[],fresh_y_1))),hash((mul_point(P,hash((seed_x[],fresh_x_1))),initiator_random_2))),sigma2_info),(mul_point(P,responder_noc_key_2),sign(noc_signing_key[],mul_point(P,responder_noc_key_2)),sign(responder_noc_key_2,(mul_point(P,responder_noc_key_2),mul_point(P,hash((seed_y[],fresh_y_1))),mul_point(P,hash((seed_x[],fresh_x_1))))),resumption_id_2),ncase_sigma2n,nil)),aead_enc(kdf(mul_point(mul_point(P,hash((seed_x[],fresh_x_1))),hash((seed_y[],fresh_y_1))),(ipk[],hash(((mul_point(P,hash((seed_x[],fresh_x_1))),initiator_random_2),(responder_random_2,mul_point(P,hash((seed_y[],fresh_y_1))),aead_enc(kdf(mul_point(mul_point(P,hash((seed_x[],fresh_x_1))),hash((seed_y[],fresh_y_1))),(ipk[],responder_random_2,mul_point(P,hash((seed_y[],fresh_y_1))),hash((mul_point(P,hash((seed_x[],fresh_x_1))),initiator_random_2))),sigma2_info),(mul_point(P,responder_noc_key_2),sign(noc_signing_key[],mul_point(P,responder_noc_key_2)),sign(responder_noc_key_2,(mul_point(P,responder_noc_key_2),mul_point(P,hash((seed_y[],fresh_y_1))),mul_point(P,hash((seed_x[],fresh_x_1))))),resumption_id_2),ncase_sigma2n,nil))))),sigma3_info),(mul_point(P,initiator_noc_key_2),sign(noc_signing_key[],mul_point(P,initiator_noc_key_2)),sign(initiator_noc_key_2,(mul_point(P,initiator_noc_key_2),mul_point(P,hash((seed_x[],fresh_x_1))),mul_point(P,hash((seed_y[],fresh_y_1)))))),ncase_sigma3n,nil)))).
 
-21. The message ipk[] may be sent to the attacker in phase 3 at output {86}.
+21. The message ipk[] may be sent to the attacker in phase 3 at output {85}.
 attacker_p3(ipk[]).
 
 22. By 21, the attacker may know ipk[] in phase 3.
@@ -7653,7 +7651,7 @@ attacker(fresh_x_1).
 So the attacker may know fresh_x_1 in phase 1.
 attacker_p1(fresh_x_1).
 
-31. The message seed_x[] may be sent to the attacker in phase 1 at output {80}.
+31. The message seed_x[] may be sent to the attacker in phase 1 at output {79}.
 attacker_p1(seed_x[]).
 
 32. By 31, the attacker may know seed_x[] in phase 1.
@@ -7769,9 +7767,9 @@ new dummy: bitstring creating dummy_2 at {39} in copy a_1
 
 event did_not_reach_end_initiator(dummy_2) at {40} in copy a_1
 
-out(c, ~M_13) with ~M_13 = seed_x_2 at {80} in copy a_2
+out(c, ~M_13) with ~M_13 = seed_x_2 at {79} in copy a_2
 
-out(c, ~M_14) with ~M_14 = ipk_3 at {86} in copy a_3
+out(c, ~M_14) with ~M_14 = ipk_3 at {85} in copy a_3
 
 The attacker has the message dec(kdf(mul_point(~M_4,hash((~M_13,~M_9))),(~M_14,hash(((~M_1,~M_2),(~M_3,~M_4,~M_5),~M_6))),sekeys_info),~M_12) = q_session_keys_i in phase 3.
 A trace has been found.
@@ -8304,8 +8302,8 @@ ok, secrecy assumption verified: fact unreachable attacker(q_id_r_r[])
 ok, secrecy assumption verified: fact unreachable attacker(q_eph_x[])
 ok, secrecy assumption verified: fact unreachable attacker_p1(q_eph_y[])
 ok, secrecy assumption verified: fact unreachable attacker(q_eph_y[])
-ok, secrecy assumption verified: fact unreachable attacker(q_session_keys_i[])
-ok, secrecy assumption verified: fact unreachable attacker(q_session_keys_r[])
+ok, secrecy assumption verified: fact unreachable attacker(q_shared_secret_i[])
+ok, secrecy assumption verified: fact unreachable attacker(q_shared_secret_r[])
 ok, secrecy assumption verified: fact unreachable attacker_p2(q_session_keys_i[])
 ok, secrecy assumption verified: fact unreachable attacker_p1(q_session_keys_i[])
 ok, secrecy assumption verified: fact unreachable attacker(q_session_keys_i[])
@@ -8373,7 +8371,7 @@ attacker(aead_enc(kdf(mul_point(mul_point(P,hash((seed_x[],fresh_x_1))),hash((se
 
 11. The message (mul_point(P,hash((seed_x[],fresh_x_1))),initiator_random_2) that the attacker may have by 4 may be received at input {48}.
 The message aead_enc(kdf(mul_point(mul_point(P,hash((seed_x[],fresh_x_1))),hash((seed_y[],fresh_y_1))),(ipk[],hash(((mul_point(P,hash((seed_x[],fresh_x_1))),initiator_random_2),(responder_random_2,mul_point(P,hash((seed_y[],fresh_y_1))),aead_enc(kdf(mul_point(mul_point(P,hash((seed_x[],fresh_x_1))),hash((seed_y[],fresh_y_1))),(ipk[],responder_random_2,mul_point(P,hash((seed_y[],fresh_y_1))),hash((mul_point(P,hash((seed_x[],fresh_x_1))),initiator_random_2))),sigma2_info),(mul_point(P,responder_noc_key_2),sign(noc_signing_key[],mul_point(P,responder_noc_key_2)),sign(responder_noc_key_2,(mul_point(P,responder_noc_key_2),mul_point(P,hash((seed_y[],fresh_y_1))),mul_point(P,hash((seed_x[],fresh_x_1))))),resumption_id_2),ncase_sigma2n,nil))))),sigma3_info),(mul_point(P,initiator_noc_key_2),sign(noc_signing_key[],mul_point(P,initiator_noc_key_2)),sign(initiator_noc_key_2,(mul_point(P,initiator_noc_key_2),mul_point(P,hash((seed_x[],fresh_x_1))),mul_point(P,hash((seed_y[],fresh_y_1)))))),ncase_sigma3n,nil) that the attacker may have by 10 may be received at input {62}.
-So the message enc(kdf(mul_point(mul_point(P,hash((seed_x[],fresh_x_1))),hash((seed_y[],fresh_y_1))),(ipk[],hash(((mul_point(P,hash((seed_x[],fresh_x_1))),initiator_random_2),(responder_random_2,mul_point(P,hash((seed_y[],fresh_y_1))),aead_enc(kdf(mul_point(mul_point(P,hash((seed_x[],fresh_x_1))),hash((seed_y[],fresh_y_1))),(ipk[],responder_random_2,mul_point(P,hash((seed_y[],fresh_y_1))),hash((mul_point(P,hash((seed_x[],fresh_x_1))),initiator_random_2))),sigma2_info),(mul_point(P,responder_noc_key_2),sign(noc_signing_key[],mul_point(P,responder_noc_key_2)),sign(responder_noc_key_2,(mul_point(P,responder_noc_key_2),mul_point(P,hash((seed_y[],fresh_y_1))),mul_point(P,hash((seed_x[],fresh_x_1))))),resumption_id_2),ncase_sigma2n,nil)),aead_enc(kdf(mul_point(mul_point(P,hash((seed_x[],fresh_x_1))),hash((seed_y[],fresh_y_1))),(ipk[],hash(((mul_point(P,hash((seed_x[],fresh_x_1))),initiator_random_2),(responder_random_2,mul_point(P,hash((seed_y[],fresh_y_1))),aead_enc(kdf(mul_point(mul_point(P,hash((seed_x[],fresh_x_1))),hash((seed_y[],fresh_y_1))),(ipk[],responder_random_2,mul_point(P,hash((seed_y[],fresh_y_1))),hash((mul_point(P,hash((seed_x[],fresh_x_1))),initiator_random_2))),sigma2_info),(mul_point(P,responder_noc_key_2),sign(noc_signing_key[],mul_point(P,responder_noc_key_2)),sign(responder_noc_key_2,(mul_point(P,responder_noc_key_2),mul_point(P,hash((seed_y[],fresh_y_1))),mul_point(P,hash((seed_x[],fresh_x_1))))),resumption_id_2),ncase_sigma2n,nil))))),sigma3_info),(mul_point(P,initiator_noc_key_2),sign(noc_signing_key[],mul_point(P,initiator_noc_key_2)),sign(initiator_noc_key_2,(mul_point(P,initiator_noc_key_2),mul_point(P,hash((seed_x[],fresh_x_1))),mul_point(P,hash((seed_y[],fresh_y_1)))))),ncase_sigma3n,nil)))),sekeys_info),q_session_keys_r[]) may be sent to the attacker at output {75}.
+So the message enc(kdf(mul_point(mul_point(P,hash((seed_x[],fresh_x_1))),hash((seed_y[],fresh_y_1))),(ipk[],hash(((mul_point(P,hash((seed_x[],fresh_x_1))),initiator_random_2),(responder_random_2,mul_point(P,hash((seed_y[],fresh_y_1))),aead_enc(kdf(mul_point(mul_point(P,hash((seed_x[],fresh_x_1))),hash((seed_y[],fresh_y_1))),(ipk[],responder_random_2,mul_point(P,hash((seed_y[],fresh_y_1))),hash((mul_point(P,hash((seed_x[],fresh_x_1))),initiator_random_2))),sigma2_info),(mul_point(P,responder_noc_key_2),sign(noc_signing_key[],mul_point(P,responder_noc_key_2)),sign(responder_noc_key_2,(mul_point(P,responder_noc_key_2),mul_point(P,hash((seed_y[],fresh_y_1))),mul_point(P,hash((seed_x[],fresh_x_1))))),resumption_id_2),ncase_sigma2n,nil)),aead_enc(kdf(mul_point(mul_point(P,hash((seed_x[],fresh_x_1))),hash((seed_y[],fresh_y_1))),(ipk[],hash(((mul_point(P,hash((seed_x[],fresh_x_1))),initiator_random_2),(responder_random_2,mul_point(P,hash((seed_y[],fresh_y_1))),aead_enc(kdf(mul_point(mul_point(P,hash((seed_x[],fresh_x_1))),hash((seed_y[],fresh_y_1))),(ipk[],responder_random_2,mul_point(P,hash((seed_y[],fresh_y_1))),hash((mul_point(P,hash((seed_x[],fresh_x_1))),initiator_random_2))),sigma2_info),(mul_point(P,responder_noc_key_2),sign(noc_signing_key[],mul_point(P,responder_noc_key_2)),sign(responder_noc_key_2,(mul_point(P,responder_noc_key_2),mul_point(P,hash((seed_y[],fresh_y_1))),mul_point(P,hash((seed_x[],fresh_x_1))))),resumption_id_2),ncase_sigma2n,nil))))),sigma3_info),(mul_point(P,initiator_noc_key_2),sign(noc_signing_key[],mul_point(P,initiator_noc_key_2)),sign(initiator_noc_key_2,(mul_point(P,initiator_noc_key_2),mul_point(P,hash((seed_x[],fresh_x_1))),mul_point(P,hash((seed_y[],fresh_y_1)))))),ncase_sigma3n,nil)))),sekeys_info),q_session_keys_r[]) may be sent to the attacker at output {74}.
 attacker(enc(kdf(mul_point(mul_point(P,hash((seed_x[],fresh_x_1))),hash((seed_y[],fresh_y_1))),(ipk[],hash(((mul_point(P,hash((seed_x[],fresh_x_1))),initiator_random_2),(responder_random_2,mul_point(P,hash((seed_y[],fresh_y_1))),aead_enc(kdf(mul_point(mul_point(P,hash((seed_x[],fresh_x_1))),hash((seed_y[],fresh_y_1))),(ipk[],responder_random_2,mul_point(P,hash((seed_y[],fresh_y_1))),hash((mul_point(P,hash((seed_x[],fresh_x_1))),initiator_random_2))),sigma2_info),(mul_point(P,responder_noc_key_2),sign(noc_signing_key[],mul_point(P,responder_noc_key_2)),sign(responder_noc_key_2,(mul_point(P,responder_noc_key_2),mul_point(P,hash((seed_y[],fresh_y_1))),mul_point(P,hash((seed_x[],fresh_x_1))))),resumption_id_2),ncase_sigma2n,nil)),aead_enc(kdf(mul_point(mul_point(P,hash((seed_x[],fresh_x_1))),hash((seed_y[],fresh_y_1))),(ipk[],hash(((mul_point(P,hash((seed_x[],fresh_x_1))),initiator_random_2),(responder_random_2,mul_point(P,hash((seed_y[],fresh_y_1))),aead_enc(kdf(mul_point(mul_point(P,hash((seed_x[],fresh_x_1))),hash((seed_y[],fresh_y_1))),(ipk[],responder_random_2,mul_point(P,hash((seed_y[],fresh_y_1))),hash((mul_point(P,hash((seed_x[],fresh_x_1))),initiator_random_2))),sigma2_info),(mul_point(P,responder_noc_key_2),sign(noc_signing_key[],mul_point(P,responder_noc_key_2)),sign(responder_noc_key_2,(mul_point(P,responder_noc_key_2),mul_point(P,hash((seed_y[],fresh_y_1))),mul_point(P,hash((seed_x[],fresh_x_1))))),resumption_id_2),ncase_sigma2n,nil))))),sigma3_info),(mul_point(P,initiator_noc_key_2),sign(noc_signing_key[],mul_point(P,initiator_noc_key_2)),sign(initiator_noc_key_2,(mul_point(P,initiator_noc_key_2),mul_point(P,hash((seed_x[],fresh_x_1))),mul_point(P,hash((seed_y[],fresh_y_1)))))),ncase_sigma3n,nil)))),sekeys_info),q_session_keys_r[])).
 
 12. By 11, the attacker may know enc(kdf(mul_point(mul_point(P,hash((seed_x[],fresh_x_1))),hash((seed_y[],fresh_y_1))),(ipk[],hash(((mul_point(P,hash((seed_x[],fresh_x_1))),initiator_random_2),(responder_random_2,mul_point(P,hash((seed_y[],fresh_y_1))),aead_enc(kdf(mul_point(mul_point(P,hash((seed_x[],fresh_x_1))),hash((seed_y[],fresh_y_1))),(ipk[],responder_random_2,mul_point(P,hash((seed_y[],fresh_y_1))),hash((mul_point(P,hash((seed_x[],fresh_x_1))),initiator_random_2))),sigma2_info),(mul_point(P,responder_noc_key_2),sign(noc_signing_key[],mul_point(P,responder_noc_key_2)),sign(responder_noc_key_2,(mul_point(P,responder_noc_key_2),mul_point(P,hash((seed_y[],fresh_y_1))),mul_point(P,hash((seed_x[],fresh_x_1))))),resumption_id_2),ncase_sigma2n,nil)),aead_enc(kdf(mul_point(mul_point(P,hash((seed_x[],fresh_x_1))),hash((seed_y[],fresh_y_1))),(ipk[],hash(((mul_point(P,hash((seed_x[],fresh_x_1))),initiator_random_2),(responder_random_2,mul_point(P,hash((seed_y[],fresh_y_1))),aead_enc(kdf(mul_point(mul_point(P,hash((seed_x[],fresh_x_1))),hash((seed_y[],fresh_y_1))),(ipk[],responder_random_2,mul_point(P,hash((seed_y[],fresh_y_1))),hash((mul_point(P,hash((seed_x[],fresh_x_1))),initiator_random_2))),sigma2_info),(mul_point(P,responder_noc_key_2),sign(noc_signing_key[],mul_point(P,responder_noc_key_2)),sign(responder_noc_key_2,(mul_point(P,responder_noc_key_2),mul_point(P,hash((seed_y[],fresh_y_1))),mul_point(P,hash((seed_x[],fresh_x_1))))),resumption_id_2),ncase_sigma2n,nil))))),sigma3_info),(mul_point(P,initiator_noc_key_2),sign(noc_signing_key[],mul_point(P,initiator_noc_key_2)),sign(initiator_noc_key_2,(mul_point(P,initiator_noc_key_2),mul_point(P,hash((seed_x[],fresh_x_1))),mul_point(P,hash((seed_y[],fresh_y_1)))))),ncase_sigma3n,nil)))),sekeys_info),q_session_keys_r[]).
@@ -8413,7 +8411,7 @@ attacker_p2(hash(((mul_point(P,hash((seed_x[],fresh_x_1))),initiator_random_2),(
 So the attacker may know hash(((mul_point(P,hash((seed_x[],fresh_x_1))),initiator_random_2),(responder_random_2,mul_point(P,hash((seed_y[],fresh_y_1))),aead_enc(kdf(mul_point(mul_point(P,hash((seed_x[],fresh_x_1))),hash((seed_y[],fresh_y_1))),(ipk[],responder_random_2,mul_point(P,hash((seed_y[],fresh_y_1))),hash((mul_point(P,hash((seed_x[],fresh_x_1))),initiator_random_2))),sigma2_info),(mul_point(P,responder_noc_key_2),sign(noc_signing_key[],mul_point(P,responder_noc_key_2)),sign(responder_noc_key_2,(mul_point(P,responder_noc_key_2),mul_point(P,hash((seed_y[],fresh_y_1))),mul_point(P,hash((seed_x[],fresh_x_1))))),resumption_id_2),ncase_sigma2n,nil)),aead_enc(kdf(mul_point(mul_point(P,hash((seed_x[],fresh_x_1))),hash((seed_y[],fresh_y_1))),(ipk[],hash(((mul_point(P,hash((seed_x[],fresh_x_1))),initiator_random_2),(responder_random_2,mul_point(P,hash((seed_y[],fresh_y_1))),aead_enc(kdf(mul_point(mul_point(P,hash((seed_x[],fresh_x_1))),hash((seed_y[],fresh_y_1))),(ipk[],responder_random_2,mul_point(P,hash((seed_y[],fresh_y_1))),hash((mul_point(P,hash((seed_x[],fresh_x_1))),initiator_random_2))),sigma2_info),(mul_point(P,responder_noc_key_2),sign(noc_signing_key[],mul_point(P,responder_noc_key_2)),sign(responder_noc_key_2,(mul_point(P,responder_noc_key_2),mul_point(P,hash((seed_y[],fresh_y_1))),mul_point(P,hash((seed_x[],fresh_x_1))))),resumption_id_2),ncase_sigma2n,nil))))),sigma3_info),(mul_point(P,initiator_noc_key_2),sign(noc_signing_key[],mul_point(P,initiator_noc_key_2)),sign(initiator_noc_key_2,(mul_point(P,initiator_noc_key_2),mul_point(P,hash((seed_x[],fresh_x_1))),mul_point(P,hash((seed_y[],fresh_y_1)))))),ncase_sigma3n,nil))) in phase 3.
 attacker_p3(hash(((mul_point(P,hash((seed_x[],fresh_x_1))),initiator_random_2),(responder_random_2,mul_point(P,hash((seed_y[],fresh_y_1))),aead_enc(kdf(mul_point(mul_point(P,hash((seed_x[],fresh_x_1))),hash((seed_y[],fresh_y_1))),(ipk[],responder_random_2,mul_point(P,hash((seed_y[],fresh_y_1))),hash((mul_point(P,hash((seed_x[],fresh_x_1))),initiator_random_2))),sigma2_info),(mul_point(P,responder_noc_key_2),sign(noc_signing_key[],mul_point(P,responder_noc_key_2)),sign(responder_noc_key_2,(mul_point(P,responder_noc_key_2),mul_point(P,hash((seed_y[],fresh_y_1))),mul_point(P,hash((seed_x[],fresh_x_1))))),resumption_id_2),ncase_sigma2n,nil)),aead_enc(kdf(mul_point(mul_point(P,hash((seed_x[],fresh_x_1))),hash((seed_y[],fresh_y_1))),(ipk[],hash(((mul_point(P,hash((seed_x[],fresh_x_1))),initiator_random_2),(responder_random_2,mul_point(P,hash((seed_y[],fresh_y_1))),aead_enc(kdf(mul_point(mul_point(P,hash((seed_x[],fresh_x_1))),hash((seed_y[],fresh_y_1))),(ipk[],responder_random_2,mul_point(P,hash((seed_y[],fresh_y_1))),hash((mul_point(P,hash((seed_x[],fresh_x_1))),initiator_random_2))),sigma2_info),(mul_point(P,responder_noc_key_2),sign(noc_signing_key[],mul_point(P,responder_noc_key_2)),sign(responder_noc_key_2,(mul_point(P,responder_noc_key_2),mul_point(P,hash((seed_y[],fresh_y_1))),mul_point(P,hash((seed_x[],fresh_x_1))))),resumption_id_2),ncase_sigma2n,nil))))),sigma3_info),(mul_point(P,initiator_noc_key_2),sign(noc_signing_key[],mul_point(P,initiator_noc_key_2)),sign(initiator_noc_key_2,(mul_point(P,initiator_noc_key_2),mul_point(P,hash((seed_x[],fresh_x_1))),mul_point(P,hash((seed_y[],fresh_y_1)))))),ncase_sigma3n,nil)))).
 
-21. The message ipk[] may be sent to the attacker in phase 3 at output {86}.
+21. The message ipk[] may be sent to the attacker in phase 3 at output {85}.
 attacker_p3(ipk[]).
 
 22. By 21, the attacker may know ipk[] in phase 3.
@@ -8455,7 +8453,7 @@ attacker(fresh_x_1).
 So the attacker may know fresh_x_1 in phase 1.
 attacker_p1(fresh_x_1).
 
-31. The message seed_x[] may be sent to the attacker in phase 1 at output {80}.
+31. The message seed_x[] may be sent to the attacker in phase 1 at output {79}.
 attacker_p1(seed_x[]).
 
 32. By 31, the attacker may know seed_x[] in phase 1.
@@ -8573,29 +8571,29 @@ event did_not_reach_end_initiator(dummy_2) at {40} in copy a_1
 
 in(c, ~M_6) with ~M_6 = aead_enc(kdf(mul_point(mul_point(P,hash((seed_x_2,fresh_x_2))),hash((seed_y_2,fresh_y_3))),(ipk_3,hash(((mul_point(P,hash((seed_x_2,fresh_x_2))),initiator_random_3),(responder_random_4,mul_point(P,hash((seed_y_2,fresh_y_3))),aead_enc(kdf(mul_point(mul_point(P,hash((seed_x_2,fresh_x_2))),hash((seed_y_2,fresh_y_3))),(ipk_3,responder_random_4,mul_point(P,hash((seed_y_2,fresh_y_3))),hash((mul_point(P,hash((seed_x_2,fresh_x_2))),initiator_random_3))),sigma2_info),(mul_point(P,responder_noc_key_4),sign(noc_signing_key,mul_point(P,responder_noc_key_4)),sign(responder_noc_key_4,(mul_point(P,responder_noc_key_4),mul_point(P,hash((seed_y_2,fresh_y_3))),mul_point(P,hash((seed_x_2,fresh_x_2))))),resumption_id_4),ncase_sigma2n,nil))))),sigma3_info),(mul_point(P,initiator_noc_key_3),sign(noc_signing_key,mul_point(P,initiator_noc_key_3)),sign(initiator_noc_key_3,(mul_point(P,initiator_noc_key_3),mul_point(P,hash((seed_x_2,fresh_x_2))),mul_point(P,hash((seed_y_2,fresh_y_3)))))),ncase_sigma3n,nil) at {62} in copy a
 
-out(c, ~M_13) with ~M_13 = sigma_finished at {68} in copy a
+out(c, ~M_13) with ~M_13 = sigma_finished at {67} in copy a
 
-event responder_end(mul_point(P,responder_noc_key_4),mul_point(P,hash((seed_y_2,fresh_y_3))),responder_random_4) at {69} in copy a
+event responder_end(mul_point(P,responder_noc_key_4),mul_point(P,hash((seed_y_2,fresh_y_3))),responder_random_4) at {68} in copy a
 
-out(c, ~M_14) with ~M_14 = enc(mul_point(P,initiator_noc_key_3),q_id_i_r) at {70} in copy a
+out(c, ~M_14) with ~M_14 = enc(mul_point(P,initiator_noc_key_3),q_id_i_r) at {69} in copy a
 
-out(c, ~M_15) with ~M_15 = enc(mul_point(P,responder_noc_key_4),q_id_r_r) at {71} in copy a
+out(c, ~M_15) with ~M_15 = enc(mul_point(P,responder_noc_key_4),q_id_r_r) at {70} in copy a
 
-out(c, ~M_16) with ~M_16 = fresh_y_3 at {72} in copy a
+out(c, ~M_16) with ~M_16 = fresh_y_3 at {71} in copy a
 
-out(c, ~M_17) with ~M_17 = enc(hash((seed_y_2,fresh_y_3)),q_eph_y) at {73} in copy a
+out(c, ~M_17) with ~M_17 = enc(hash((seed_y_2,fresh_y_3)),q_eph_y) at {72} in copy a
 
-out(c, ~M_18) with ~M_18 = enc(mul_point(mul_point(P,hash((seed_x_2,fresh_x_2))),hash((seed_y_2,fresh_y_3))),q_shared_secret_r) at {74} in copy a
+out(c, ~M_18) with ~M_18 = enc(mul_point(mul_point(P,hash((seed_x_2,fresh_x_2))),hash((seed_y_2,fresh_y_3))),q_shared_secret_r) at {73} in copy a
 
-out(c, ~M_19) with ~M_19 = enc(kdf(mul_point(mul_point(P,hash((seed_x_2,fresh_x_2))),hash((seed_y_2,fresh_y_3))),(ipk_3,hash(((mul_point(P,hash((seed_x_2,fresh_x_2))),initiator_random_3),(responder_random_4,mul_point(P,hash((seed_y_2,fresh_y_3))),aead_enc(kdf(mul_point(mul_point(P,hash((seed_x_2,fresh_x_2))),hash((seed_y_2,fresh_y_3))),(ipk_3,responder_random_4,mul_point(P,hash((seed_y_2,fresh_y_3))),hash((mul_point(P,hash((seed_x_2,fresh_x_2))),initiator_random_3))),sigma2_info),(mul_point(P,responder_noc_key_4),sign(noc_signing_key,mul_point(P,responder_noc_key_4)),sign(responder_noc_key_4,(mul_point(P,responder_noc_key_4),mul_point(P,hash((seed_y_2,fresh_y_3))),mul_point(P,hash((seed_x_2,fresh_x_2))))),resumption_id_4),ncase_sigma2n,nil)),aead_enc(kdf(mul_point(mul_point(P,hash((seed_x_2,fresh_x_2))),hash((seed_y_2,fresh_y_3))),(ipk_3,hash(((mul_point(P,hash((seed_x_2,fresh_x_2))),initiator_random_3),(responder_random_4,mul_point(P,hash((seed_y_2,fresh_y_3))),aead_enc(kdf(mul_point(mul_point(P,hash((seed_x_2,fresh_x_2))),hash((seed_y_2,fresh_y_3))),(ipk_3,responder_random_4,mul_point(P,hash((seed_y_2,fresh_y_3))),hash((mul_point(P,hash((seed_x_2,fresh_x_2))),initiator_random_3))),sigma2_info),(mul_point(P,responder_noc_key_4),sign(noc_signing_key,mul_point(P,responder_noc_key_4)),sign(responder_noc_key_4,(mul_point(P,responder_noc_key_4),mul_point(P,hash((seed_y_2,fresh_y_3))),mul_point(P,hash((seed_x_2,fresh_x_2))))),resumption_id_4),ncase_sigma2n,nil))))),sigma3_info),(mul_point(P,initiator_noc_key_3),sign(noc_signing_key,mul_point(P,initiator_noc_key_3)),sign(initiator_noc_key_3,(mul_point(P,initiator_noc_key_3),mul_point(P,hash((seed_x_2,fresh_x_2))),mul_point(P,hash((seed_y_2,fresh_y_3)))))),ncase_sigma3n,nil)))),sekeys_info),q_session_keys_r) at {75} in copy a
+out(c, ~M_19) with ~M_19 = enc(kdf(mul_point(mul_point(P,hash((seed_x_2,fresh_x_2))),hash((seed_y_2,fresh_y_3))),(ipk_3,hash(((mul_point(P,hash((seed_x_2,fresh_x_2))),initiator_random_3),(responder_random_4,mul_point(P,hash((seed_y_2,fresh_y_3))),aead_enc(kdf(mul_point(mul_point(P,hash((seed_x_2,fresh_x_2))),hash((seed_y_2,fresh_y_3))),(ipk_3,responder_random_4,mul_point(P,hash((seed_y_2,fresh_y_3))),hash((mul_point(P,hash((seed_x_2,fresh_x_2))),initiator_random_3))),sigma2_info),(mul_point(P,responder_noc_key_4),sign(noc_signing_key,mul_point(P,responder_noc_key_4)),sign(responder_noc_key_4,(mul_point(P,responder_noc_key_4),mul_point(P,hash((seed_y_2,fresh_y_3))),mul_point(P,hash((seed_x_2,fresh_x_2))))),resumption_id_4),ncase_sigma2n,nil)),aead_enc(kdf(mul_point(mul_point(P,hash((seed_x_2,fresh_x_2))),hash((seed_y_2,fresh_y_3))),(ipk_3,hash(((mul_point(P,hash((seed_x_2,fresh_x_2))),initiator_random_3),(responder_random_4,mul_point(P,hash((seed_y_2,fresh_y_3))),aead_enc(kdf(mul_point(mul_point(P,hash((seed_x_2,fresh_x_2))),hash((seed_y_2,fresh_y_3))),(ipk_3,responder_random_4,mul_point(P,hash((seed_y_2,fresh_y_3))),hash((mul_point(P,hash((seed_x_2,fresh_x_2))),initiator_random_3))),sigma2_info),(mul_point(P,responder_noc_key_4),sign(noc_signing_key,mul_point(P,responder_noc_key_4)),sign(responder_noc_key_4,(mul_point(P,responder_noc_key_4),mul_point(P,hash((seed_y_2,fresh_y_3))),mul_point(P,hash((seed_x_2,fresh_x_2))))),resumption_id_4),ncase_sigma2n,nil))))),sigma3_info),(mul_point(P,initiator_noc_key_3),sign(noc_signing_key,mul_point(P,initiator_noc_key_3)),sign(initiator_noc_key_3,(mul_point(P,initiator_noc_key_3),mul_point(P,hash((seed_x_2,fresh_x_2))),mul_point(P,hash((seed_y_2,fresh_y_3)))))),ncase_sigma3n,nil)))),sekeys_info),q_session_keys_r) at {74} in copy a
 
-new dummy_1: bitstring creating dummy_3 at {76} in copy a
+new dummy_1: bitstring creating dummy_3 at {75} in copy a
 
-event did_not_reach_end_responder(dummy_3) at {77} in copy a
+event did_not_reach_end_responder(dummy_3) at {76} in copy a
 
-out(c, ~M_20) with ~M_20 = seed_x_2 at {80} in copy a_2
+out(c, ~M_20) with ~M_20 = seed_x_2 at {79} in copy a_2
 
-out(c, ~M_21) with ~M_21 = ipk_3 at {86} in copy a_3
+out(c, ~M_21) with ~M_21 = ipk_3 at {85} in copy a_3
 
 The attacker has the message dec(kdf(mul_point(~M_4,hash((~M_20,~M_9))),(~M_21,hash(((~M_1,~M_2),(~M_3,~M_4,~M_5),~M_6))),sekeys_info),~M_19) = q_session_keys_r in phase 3.
 A trace has been found.
@@ -9128,8 +9126,8 @@ ok, secrecy assumption verified: fact unreachable attacker(q_id_r_r[])
 ok, secrecy assumption verified: fact unreachable attacker(q_eph_x[])
 ok, secrecy assumption verified: fact unreachable attacker_p1(q_eph_y[])
 ok, secrecy assumption verified: fact unreachable attacker(q_eph_y[])
-ok, secrecy assumption verified: fact unreachable attacker(q_session_keys_i[])
-ok, secrecy assumption verified: fact unreachable attacker(q_session_keys_r[])
+ok, secrecy assumption verified: fact unreachable attacker(q_shared_secret_i[])
+ok, secrecy assumption verified: fact unreachable attacker(q_shared_secret_r[])
 ok, secrecy assumption verified: fact unreachable attacker_p2(q_session_keys_i[])
 ok, secrecy assumption verified: fact unreachable attacker_p1(q_session_keys_i[])
 ok, secrecy assumption verified: fact unreachable attacker(q_session_keys_i[])
@@ -9799,8 +9797,8 @@ ok, secrecy assumption verified: fact unreachable attacker(q_id_r_r[])
 ok, secrecy assumption verified: fact unreachable attacker(q_eph_x[])
 ok, secrecy assumption verified: fact unreachable attacker_p1(q_eph_y[])
 ok, secrecy assumption verified: fact unreachable attacker(q_eph_y[])
-ok, secrecy assumption verified: fact unreachable attacker(q_session_keys_i[])
-ok, secrecy assumption verified: fact unreachable attacker(q_session_keys_r[])
+ok, secrecy assumption verified: fact unreachable attacker(q_shared_secret_i[])
+ok, secrecy assumption verified: fact unreachable attacker(q_shared_secret_r[])
 ok, secrecy assumption verified: fact unreachable attacker_p2(q_session_keys_i[])
 ok, secrecy assumption verified: fact unreachable attacker_p1(q_session_keys_i[])
 ok, secrecy assumption verified: fact unreachable attacker(q_session_keys_i[])
@@ -9878,7 +9876,7 @@ attacker(aead_enc(kdf(mul_point(mul_point(P,hash((seed_y[],fresh_y_1))),hash((se
 
 12. The message (mul_point(P,hash((seed_x[],fresh_x_1))),initiator_random_2) that the attacker may have by 4 may be received at input {48}.
 The message aead_enc(kdf(mul_point(mul_point(P,hash((seed_y[],fresh_y_1))),hash((seed_x[],fresh_x_1))),(ipk[],hash(((mul_point(P,hash((seed_x[],fresh_x_1))),initiator_random_2),(responder_random_2,mul_point(P,hash((seed_y[],fresh_y_1))),aead_enc(kdf(mul_point(mul_point(P,hash((seed_y[],fresh_y_1))),hash((seed_x[],fresh_x_1))),(ipk[],responder_random_2,mul_point(P,hash((seed_y[],fresh_y_1))),hash((mul_point(P,hash((seed_x[],fresh_x_1))),initiator_random_2))),sigma2_info),(mul_point(P,responder_noc_key_2),sign(noc_signing_key[],mul_point(P,responder_noc_key_2)),sign(responder_noc_key_2,(mul_point(P,responder_noc_key_2),mul_point(P,hash((seed_y[],fresh_y_1))),mul_point(P,hash((seed_x[],fresh_x_1))))),resumption_id_2),ncase_sigma2n,nil))))),sigma3_info),(mul_point(P,initiator_noc_key_2),sign(noc_signing_key[],mul_point(P,initiator_noc_key_2)),sign(initiator_noc_key_2,(mul_point(P,initiator_noc_key_2),mul_point(P,hash((seed_x[],fresh_x_1))),mul_point(P,hash((seed_y[],fresh_y_1)))))),ncase_sigma3n,nil) that the attacker may have by 11 may be received at input {62}.
-So event did_not_reach_end_responder(dummy_2) may be executed at {77}.
+So event did_not_reach_end_responder(dummy_2) may be executed at {76}.
 event(did_not_reach_end_responder(dummy_2)).
 
 13. By 12, event(did_not_reach_end_responder(dummy_2)).
@@ -9947,27 +9945,27 @@ event did_not_reach_end_initiator(dummy_3) at {40} in copy a_1
 
 in(c, ~M_6) with ~M_6 = aead_enc(kdf(mul_point(mul_point(P,hash((seed_y_2,fresh_y_2))),hash((seed_x_2,fresh_x_2))),(ipk_3,hash(((mul_point(P,hash((seed_x_2,fresh_x_2))),initiator_random_3),(responder_random_3,mul_point(P,hash((seed_y_2,fresh_y_2))),aead_enc(kdf(mul_point(mul_point(P,hash((seed_y_2,fresh_y_2))),hash((seed_x_2,fresh_x_2))),(ipk_3,responder_random_3,mul_point(P,hash((seed_y_2,fresh_y_2))),hash((mul_point(P,hash((seed_x_2,fresh_x_2))),initiator_random_3))),sigma2_info),(mul_point(P,responder_noc_key_3),sign(noc_signing_key,mul_point(P,responder_noc_key_3)),sign(responder_noc_key_3,(mul_point(P,responder_noc_key_3),mul_point(P,hash((seed_y_2,fresh_y_2))),mul_point(P,hash((seed_x_2,fresh_x_2))))),resumption_id_3),ncase_sigma2n,nil))))),sigma3_info),(mul_point(P,initiator_noc_key_3),sign(noc_signing_key,mul_point(P,initiator_noc_key_3)),sign(initiator_noc_key_3,(mul_point(P,initiator_noc_key_3),mul_point(P,hash((seed_x_2,fresh_x_2))),mul_point(P,hash((seed_y_2,fresh_y_2)))))),ncase_sigma3n,nil) at {62} in copy a
 
-out(c, ~M_13) with ~M_13 = sigma_finished at {68} in copy a
+out(c, ~M_13) with ~M_13 = sigma_finished at {67} in copy a
 
-event responder_end(mul_point(P,responder_noc_key_3),mul_point(P,hash((seed_y_2,fresh_y_2))),responder_random_3) at {69} in copy a
+event responder_end(mul_point(P,responder_noc_key_3),mul_point(P,hash((seed_y_2,fresh_y_2))),responder_random_3) at {68} in copy a
 
-out(c, ~M_14) with ~M_14 = enc(mul_point(P,initiator_noc_key_3),q_id_i_r) at {70} in copy a
+out(c, ~M_14) with ~M_14 = enc(mul_point(P,initiator_noc_key_3),q_id_i_r) at {69} in copy a
 
-out(c, ~M_15) with ~M_15 = enc(mul_point(P,responder_noc_key_3),q_id_r_r) at {71} in copy a
+out(c, ~M_15) with ~M_15 = enc(mul_point(P,responder_noc_key_3),q_id_r_r) at {70} in copy a
 
-out(c, ~M_16) with ~M_16 = fresh_y_2 at {72} in copy a
+out(c, ~M_16) with ~M_16 = fresh_y_2 at {71} in copy a
 
-out(c, ~M_17) with ~M_17 = enc(hash((seed_y_2,fresh_y_2)),q_eph_y) at {73} in copy a
+out(c, ~M_17) with ~M_17 = enc(hash((seed_y_2,fresh_y_2)),q_eph_y) at {72} in copy a
 
-out(c, ~M_18) with ~M_18 = enc(mul_point(mul_point(P,hash((seed_x_2,fresh_x_2))),hash((seed_y_2,fresh_y_2))),q_shared_secret_r) at {74} in copy a
+out(c, ~M_18) with ~M_18 = enc(mul_point(mul_point(P,hash((seed_x_2,fresh_x_2))),hash((seed_y_2,fresh_y_2))),q_shared_secret_r) at {73} in copy a
 
-out(c, ~M_19) with ~M_19 = enc(kdf(mul_point(mul_point(P,hash((seed_x_2,fresh_x_2))),hash((seed_y_2,fresh_y_2))),(ipk_3,hash(((mul_point(P,hash((seed_x_2,fresh_x_2))),initiator_random_3),(responder_random_3,mul_point(P,hash((seed_y_2,fresh_y_2))),aead_enc(kdf(mul_point(mul_point(P,hash((seed_x_2,fresh_x_2))),hash((seed_y_2,fresh_y_2))),(ipk_3,responder_random_3,mul_point(P,hash((seed_y_2,fresh_y_2))),hash((mul_point(P,hash((seed_x_2,fresh_x_2))),initiator_random_3))),sigma2_info),(mul_point(P,responder_noc_key_3),sign(noc_signing_key,mul_point(P,responder_noc_key_3)),sign(responder_noc_key_3,(mul_point(P,responder_noc_key_3),mul_point(P,hash((seed_y_2,fresh_y_2))),mul_point(P,hash((seed_x_2,fresh_x_2))))),resumption_id_3),ncase_sigma2n,nil)),aead_enc(kdf(mul_point(mul_point(P,hash((seed_y_2,fresh_y_2))),hash((seed_x_2,fresh_x_2))),(ipk_3,hash(((mul_point(P,hash((seed_x_2,fresh_x_2))),initiator_random_3),(responder_random_3,mul_point(P,hash((seed_y_2,fresh_y_2))),aead_enc(kdf(mul_point(mul_point(P,hash((seed_y_2,fresh_y_2))),hash((seed_x_2,fresh_x_2))),(ipk_3,responder_random_3,mul_point(P,hash((seed_y_2,fresh_y_2))),hash((mul_point(P,hash((seed_x_2,fresh_x_2))),initiator_random_3))),sigma2_info),(mul_point(P,responder_noc_key_3),sign(noc_signing_key,mul_point(P,responder_noc_key_3)),sign(responder_noc_key_3,(mul_point(P,responder_noc_key_3),mul_point(P,hash((seed_y_2,fresh_y_2))),mul_point(P,hash((seed_x_2,fresh_x_2))))),resumption_id_3),ncase_sigma2n,nil))))),sigma3_info),(mul_point(P,initiator_noc_key_3),sign(noc_signing_key,mul_point(P,initiator_noc_key_3)),sign(initiator_noc_key_3,(mul_point(P,initiator_noc_key_3),mul_point(P,hash((seed_x_2,fresh_x_2))),mul_point(P,hash((seed_y_2,fresh_y_2)))))),ncase_sigma3n,nil)))),sekeys_info),q_session_keys_r) at {75} in copy a
+out(c, ~M_19) with ~M_19 = enc(kdf(mul_point(mul_point(P,hash((seed_x_2,fresh_x_2))),hash((seed_y_2,fresh_y_2))),(ipk_3,hash(((mul_point(P,hash((seed_x_2,fresh_x_2))),initiator_random_3),(responder_random_3,mul_point(P,hash((seed_y_2,fresh_y_2))),aead_enc(kdf(mul_point(mul_point(P,hash((seed_x_2,fresh_x_2))),hash((seed_y_2,fresh_y_2))),(ipk_3,responder_random_3,mul_point(P,hash((seed_y_2,fresh_y_2))),hash((mul_point(P,hash((seed_x_2,fresh_x_2))),initiator_random_3))),sigma2_info),(mul_point(P,responder_noc_key_3),sign(noc_signing_key,mul_point(P,responder_noc_key_3)),sign(responder_noc_key_3,(mul_point(P,responder_noc_key_3),mul_point(P,hash((seed_y_2,fresh_y_2))),mul_point(P,hash((seed_x_2,fresh_x_2))))),resumption_id_3),ncase_sigma2n,nil)),aead_enc(kdf(mul_point(mul_point(P,hash((seed_y_2,fresh_y_2))),hash((seed_x_2,fresh_x_2))),(ipk_3,hash(((mul_point(P,hash((seed_x_2,fresh_x_2))),initiator_random_3),(responder_random_3,mul_point(P,hash((seed_y_2,fresh_y_2))),aead_enc(kdf(mul_point(mul_point(P,hash((seed_y_2,fresh_y_2))),hash((seed_x_2,fresh_x_2))),(ipk_3,responder_random_3,mul_point(P,hash((seed_y_2,fresh_y_2))),hash((mul_point(P,hash((seed_x_2,fresh_x_2))),initiator_random_3))),sigma2_info),(mul_point(P,responder_noc_key_3),sign(noc_signing_key,mul_point(P,responder_noc_key_3)),sign(responder_noc_key_3,(mul_point(P,responder_noc_key_3),mul_point(P,hash((seed_y_2,fresh_y_2))),mul_point(P,hash((seed_x_2,fresh_x_2))))),resumption_id_3),ncase_sigma2n,nil))))),sigma3_info),(mul_point(P,initiator_noc_key_3),sign(noc_signing_key,mul_point(P,initiator_noc_key_3)),sign(initiator_noc_key_3,(mul_point(P,initiator_noc_key_3),mul_point(P,hash((seed_x_2,fresh_x_2))),mul_point(P,hash((seed_y_2,fresh_y_2)))))),ncase_sigma3n,nil)))),sekeys_info),q_session_keys_r) at {74} in copy a
 
-new dummy_1: bitstring creating dummy_4 at {76} in copy a
+new dummy_1: bitstring creating dummy_4 at {75} in copy a
 
-event did_not_reach_end_responder(dummy_4) at {77} in copy a (goal)
+event did_not_reach_end_responder(dummy_4) at {76} in copy a (goal)
 
-The event did_not_reach_end_responder(dummy_4) is executed at {77} in copy a.
+The event did_not_reach_end_responder(dummy_4) is executed at {76} in copy a.
 A trace has been found.
 RESULT not event(did_not_reach_end_responder(x_1)) is false.
 
