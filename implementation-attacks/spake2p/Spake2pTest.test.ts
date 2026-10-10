@@ -27,8 +27,8 @@ describe("Spake2p", () => {
             "04390d29bf185c3abf99f150ae7c13388c82b6be0c07b1b8d90d26853e84374bbdc82becdb978ca3792f472424106a2578012752c11938fcf60a41df75ff7cf947",
         );
         const Ke = ByteArray.fromHex("ea3276d68334576097e04b19ee5a3a8b");
-        const hAY = ByteArray.fromHex("71d9412779b6c45a2c615c9df3f1fd93dc0aaf63104da8ece4aa1b5a3a415fea");
-        const hBX = ByteArray.fromHex("095dc0400355cc233fde7437811815b3c1524aae80fd4e6810cf531cf11d20e3");
+        const cA = ByteArray.fromHex("71d9412779b6c45a2c615c9df3f1fd93dc0aaf63104da8ece4aa1b5a3a415fea");
+        const cB = ByteArray.fromHex("095dc0400355cc233fde7437811815b3c1524aae80fd4e6810cf531cf11d20e3");
         const spake2pInitiator = new Spake2p(context, x, w0);
         const spake2pReceiver = new Spake2p(context, y, w0);
 
@@ -48,16 +48,16 @@ describe("Spake2p", () => {
             const result = await spake2pInitiator.computeSecretAndVerifiersFromY(w1, X, Y);
 
             assert.equal(result.Ke.toHex(), Ke.toHex());
-            assert.equal(result.hAY.toHex(), hAY.toHex());
-            assert.equal(result.hBX.toHex(), hBX.toHex());
+            assert.equal(result.cA.toHex(), cA.toHex());
+            assert.equal(result.cB.toHex(), cB.toHex());
         })
 
         it("generates shared secret and key confirmation for the receiver", async () => {
             const result = await spake2pReceiver.computeSecretAndVerifiersFromX(L, X, Y);
 
             assert.equal(result.Ke.toHex(), Ke.toHex());
-            assert.equal(result.hAY.toHex(), hAY.toHex());
-            assert.equal(result.hBX.toHex(), hBX.toHex());
+            assert.equal(result.cA.toHex(), cA.toHex());
+            assert.equal(result.cB.toHex(), cB.toHex());
         })
     });
 

@@ -11,6 +11,7 @@ Requires Node.js 18 or newer (`brew install node` on macOS, or the NodeSource pa
 
 ```bash
 npm install
+npm test   # smoke test: checks the SPAKE2+ code against the official test vectors, 5 tests should pass
 ```
 
 The important code is in the directory `session/pase`:
