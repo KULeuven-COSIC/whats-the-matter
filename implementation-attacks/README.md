@@ -7,7 +7,7 @@ This directory contains research and code related to attacks we performed to bre
 ### 1. **spake2p**
 This directory contains TypeScript code, forked from the official [Matter.js repository](https://github.com/project-chip/matter.js/), for conducting pre-computation and brute force attacks specifically targeting Matter's SPAKE2+ protocol. This code also allows for simulating a full PASE session between two devices. The code has been adjusted to remove some Matter-specific dependencies, allowing for a simplified simulation of a PASE session.
 
-Requires Node.js 18 or newer (`brew install node` on macOS, or the NodeSource package on Linux). In the main `spake2p` directory:
+Requires Node.js 18 or newer (`brew install node` on macOS, [NodeSource](https://github.com/nodesource/distributions) on Linux). In the main `spake2p` directory:
 
 ```bash
 npm install
@@ -41,11 +41,13 @@ cd ../lighting-app/linux && gn gen out/debug && ninja -C out/debug
 
 **Linux (Debian/Ubuntu)**
 
+Python 3.11 or newer is required (Ubuntu 22.04 ships 3.10; see the SDK's [build guide](https://github.com/project-chip/connectedhomeip/blob/master/docs/guides/BUILDING.md)).
+
 ```bash
-sudo apt update && sudo apt install -y git gcc g++ pkg-config libssl-dev \
+sudo apt update && sudo apt install -y git gcc g++ pkg-config cmake curl libssl-dev \
   libdbus-1-dev libglib2.0-dev libavahi-client-dev ninja-build \
   python3-venv python3-dev python3-pip unzip libgirepository1.0-dev \
-  libcairo2-dev libreadline-dev
+  libcairo2-dev libreadline-dev libevent-dev default-jre
 git clone --depth=1 https://github.com/project-chip/connectedhomeip.git
 cd connectedhomeip
 ./scripts/checkout_submodules.py --shallow --platform linux
