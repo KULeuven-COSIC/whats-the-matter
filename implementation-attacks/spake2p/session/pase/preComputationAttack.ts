@@ -49,7 +49,7 @@ async function preComputationAttack() {
     // initializing PBKDF parameters
     const pbkdfParameters: PbkdfParameters = {
         iterations: 1000,
-        salt: ByteArray.fromString('cosic'), // using a predefined salt 'asalt'
+        salt: ByteArray.fromString('asalt'), // must be the same salt as in preComputationTableBuilder.ts: w0 depends on it, so the lookup only works for a table built with this salt
     };
 
     // simulating server with a random passcode (which is not allowed to be in FORBIDDEN_PASSCODES)

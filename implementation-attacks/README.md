@@ -17,7 +17,7 @@ The important code is in the directory `session/pase`:
 - **pairingTest.ts**: A TypeScript test file that can be run by executing the command `npx ts-node pairingTest.ts` in a terminal (in the same directory as the file). It simulates the pairing between two devices.
 - **bruteForceAttack.ts**: Contains code for performing a brute force attack on Matter's PASE protocol. Can be run with `npx ts-node bruteForceAttack.ts` in a terminal (in the same directory as the file).
 - **preComputationTableBuilder.ts**: This file contains the logic for building the table required for the pre-computation attack. Can be run with `npx ts-node preComputationTableBuilder.ts` in a terminal (in the same directory as the file).
-- **preComputationAttack.ts**: The main script for executing the pre-computation attack. The salt value in this script is set to 'public' for testing purposes. Can be run with `npx ts-node preComputationAttack.ts` in a terminal (in the same directory as the file).
+- **preComputationAttack.ts**: The main script for executing the pre-computation attack. It reads `table.csv` from the current directory, as written by `preComputationTableBuilder.ts`. Both scripts use the PBKDF2 salt 'asalt' with 1000 iterations. Since w0 depends on the salt, the attack only finds passcodes in a table built with the same parameters. Can be run with `npx ts-node preComputationAttack.ts` in a terminal (in the same directory as the file).
 
 ### 2. **chip-tool**
 The `chip-tool` is a command-line tool used for commissioning Matter devices, meaning it helps securely add new devices to a Matter network. It facilitates the pairing and configuration process.
