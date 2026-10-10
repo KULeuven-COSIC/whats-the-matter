@@ -5,7 +5,6 @@ import signal
 import re
 import sys
 import threading # for device logging
-import numpy as np
 
 
 # --- Configuration ---
