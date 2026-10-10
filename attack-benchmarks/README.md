@@ -57,6 +57,7 @@ Run:
 
 ```bash
 cd bruteForce
+pip3 install -r requirements.txt
 python3 BruteForceAttackWithBenchmarks.py
 ```
 
