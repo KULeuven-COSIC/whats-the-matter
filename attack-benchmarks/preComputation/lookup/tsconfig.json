@@ -1,0 +1,11 @@
+{
+  // Reuses the compiler settings of the spake2p project, whose crypto code this
+  // benchmark imports, and the type definitions installed there (run `npm install`
+  // in implementation-attacks/spake2p first). Without this file ts-node falls back
+  // to defaults that lack the DOM lib (JsonWebKey) and the Node.js types.
+  "extends": "../../../implementation-attacks/spake2p/tsconfig.json",
+  "compilerOptions": {
+    "typeRoots": ["../../../implementation-attacks/spake2p/node_modules/@types"],
+    "types": ["node"]
+  }
+}
