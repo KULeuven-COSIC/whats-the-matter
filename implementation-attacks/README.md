@@ -75,3 +75,5 @@ export CHIP_TOOL_BUILD_DIR=<dir containing the chip-tool binary>
 export LIGHTING_APP_BUILD_DIR=<dir containing the chip-lighting-app binary>
 python3 BruteForceAttack.py
 ```
+
+The script targets the default test setup values of the SDK example apps, passcode 20202021 and discriminator 3840, and skips the real passcode so the device is never commissioned. If you built `chip-lighting-app` with other values, change `CORRECT_PASSCODE` and `TARGET_DISCRIMINATOR` at the top of the script.

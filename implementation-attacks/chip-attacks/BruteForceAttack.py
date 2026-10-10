@@ -21,7 +21,7 @@ LIGHTING_APP_EXEC = os.path.join(LIGHTING_APP_BUILD_DIR, "chip-lighting-app")
 LIGHTING_APP_KVS = "/tmp/chip_kvs" # default KVS path for linux example
 
 TARGET_DISCRIMINATOR = 3840
-CORRECT_PASSCODE = 20191960 # to avoid accidentally hitting this
+CORRECT_PASSCODE = 20202021 # default test passcode of the SDK example apps (skipped so the device is never actually commissioned)
 NODE_ID_TO_ASSIGN = 5      # temporary Node ID for commissioning attempts
 
 ATTEMPTS_PER_CYCLE = 20
